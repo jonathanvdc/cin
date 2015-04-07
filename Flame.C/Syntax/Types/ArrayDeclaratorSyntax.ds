@@ -28,9 +28,8 @@ namespace Flame.Syntax.C
                                        .Concat(TrailingBracket.Location);
         }
 
-        public IType CreateType(IType Type, ICSyntaxState State)
+        private IType CreateArrayType(IType Type, ICSyntaxState State)
         {
-            var innerType = Declarator.CreateType(Type, State);
             var sizeExpr = Length.CreateVerifiedExpression(State);
             if (sizeExpr.IsConstant && sizeExpr.Type.Equals(PrimitiveTypes.Int32))
             {
@@ -38,10 +37,16 @@ namespace Flame.Syntax.C
                 if (boundSize != null)
                 {
                     int size = boundSize.GetValue<int>();
-                    return innerType.MakeVectorType(new int[] { size });
+                    return Type.MakeVectorType(new int[] { size });
                 }
             }
-            return innerType.MakeArrayType(1);
+            return Type.MakeArrayType(1);
+        }
+
+        public IType CreateType(IType Type, ICSyntaxState State)
+        {
+            var arrType = CreateArrayType(Type, State);
+            return Declarator.CreateType(arrType, State);
         }
 
         public override const string ToString()

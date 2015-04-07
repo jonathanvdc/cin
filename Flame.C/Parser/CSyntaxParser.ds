@@ -180,8 +180,9 @@ namespace Flame.C.Parser
         protected virtual IDeclaratorSyntax ParsePointerDeclarator(ITokenStream Tokens, bool RequireName)
         {
             var asterisk = Tokens.NextNoTrivia(TokenType.Asterisk, Log);
-            var innerDeclarator = ParseElementDeclarator(Tokens, RequireName);
-            return new PointerDeclaratorSyntax(asterisk, innerDeclarator);
+            var innerDeclarator = ParseDeclarator(Tokens, RequireName);
+            var result = new PointerDeclaratorSyntax(asterisk, innerDeclarator);
+            return ParseContainerDeclarator(result, Tokens);
         }
 
         protected virtual IDeclaratorSyntax ParseParenthesesDeclarator(ITokenStream Tokens, bool RequireName)
@@ -189,16 +190,57 @@ namespace Flame.C.Parser
             var rparen = Tokens.NextNoTrivia(TokenType.RParen, Log);
             var innerDeclarator = ParseDeclarator(Tokens, RequireName);
             var lparen = Tokens.NextNoTrivia(TokenType.LParen, Log);
-            return new ParenthesesDeclaratorSyntax(rparen, innerDeclarator, lparen);
+            var result = new ParenthesesDeclaratorSyntax(rparen, innerDeclarator, lparen);
+            return ParseContainerDeclarator(result, Tokens);
         }
 
         protected virtual IDeclaratorSyntax ParseIdentifierDeclarator(ITokenStream Tokens)
         {
             var ident = Tokens.NextNoTrivia(TokenType.Identifier, Log);
-            return new IdentifierDeclaratorSyntax(ident);
+            var result = new IdentifierDeclaratorSyntax(ident);
+            return ParseContainerDeclarator(result, Tokens);
         }
 
-        protected virtual IDeclaratorSyntax ParseElementDeclarator(ITokenStream Tokens, bool RequireName)
+        protected virtual IDeclaratorSyntax ParseEmptyDeclarator(ITokenStream Tokens)
+        {
+            var result = new EmptyDeclaratorSyntax();
+            return ParseContainerDeclarator(result, Tokens);
+        }
+
+        protected virtual IDeclaratorSyntax ParseArrayDeclarator(IDeclaratorSyntax Element, ITokenStream Tokens)
+        {
+            var rbrackets = Tokens.NextNoTrivia(TokenType.RBrackets, Log);
+            var len = ParseExpression(Tokens);
+            var lbrackets = Tokens.NextNoTrivia(TokenType.LBrackets, Log);
+            var result = new ArrayDeclaratorSyntax(Element, rbrackets, len, lbrackets);
+            return ParseContainerDeclarator(result, Tokens);
+        }
+
+        protected virtual IDeclaratorSyntax ParseFunctionDeclarator(IDeclaratorSyntax Element, ITokenStream Tokens)
+        {
+            var parameters = ParseParameterList(Tokens);
+            var result = new FunctionDeclaratorSyntax(Element, parameters);
+            return ParseContainerDeclarator(result, Tokens);
+        }
+
+        protected virtual IDeclaratorSyntax ParseContainerDeclarator(IDeclaratorSyntax Element, ITokenStream Tokens)
+        {
+            var peek = Tokens.PeekNoTrivia();
+            if (peek.Type == TokenType.RBrackets)
+            {
+                return ParseArrayDeclarator(Element, Tokens);
+            }
+            else if (peek.Type == TokenType.RParen)
+            {
+                return ParseFunctionDeclarator(Element, Tokens);
+            }
+            else
+            {
+                return Element;
+            }
+        }
+
+        public virtual IDeclaratorSyntax ParseDeclarator(ITokenStream Tokens, bool RequireName)
         {
             var peek = Tokens.PeekNoTrivia();
             if (peek.Type == TokenType.Asterisk)
@@ -215,42 +257,8 @@ namespace Flame.C.Parser
             }
             else
             {
-                return new EmptyDeclaratorSyntax();
+                return ParseEmptyDeclarator(Tokens);
             }
-        }
-
-        protected virtual IDeclaratorSyntax ParseArrayDeclarator(IDeclaratorSyntax Element, ITokenStream Tokens)
-        {
-            var rbrackets = Tokens.NextNoTrivia(TokenType.RBrackets, Log);
-            var len = ParseExpression(Tokens);
-            var lbrackets = Tokens.NextNoTrivia(TokenType.LBrackets, Log);
-            return new ArrayDeclaratorSyntax(Element, rbrackets, len, lbrackets);
-        }
-
-        protected virtual IDeclaratorSyntax ParseFunctionDeclarator(IDeclaratorSyntax Element, ITokenStream Tokens)
-        {
-            var parameters = ParseParameterList(Tokens);
-            return new FunctionDeclaratorSyntax(Element, parameters);
-        }
-
-        public virtual IDeclaratorSyntax ParseDeclarator(ITokenStream Tokens, bool RequireName)
-        {
-            var elem = ParseElementDeclarator(Tokens, RequireName);
-            var peek = Tokens.PeekNoTrivia();
-            IDeclaratorSyntax result;
-            if (peek.Type == TokenType.RBrackets)
-            {
-                result = ParseArrayDeclarator(elem, Tokens);
-            }
-            else if (peek.Type == TokenType.RParen)
-            {
-                result = ParseFunctionDeclarator(elem, Tokens);
-            }
-            else
-            {
-                result = elem;
-            }
-            return result;
         }
 
         #endregion

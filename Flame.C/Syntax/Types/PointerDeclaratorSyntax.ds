@@ -23,7 +23,7 @@ namespace Flame.Syntax.C
 
         public IType CreateType(IType Type, ICSyntaxState State)
         {
-            return Declarator.CreateType(Type, State).MakePointerType(PointerKind.TransientPointer);
+            return Declarator.CreateType(Type.MakePointerType(PointerKind.TransientPointer), State);
         }
 
         public override const string ToString()
