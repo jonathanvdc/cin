@@ -1,0 +1,65 @@
+using System;
+using System.Collections.Generic;
+using Flame.Compiler;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Expressions;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class BlockSyntax : IStatementSyntax, ISourceSyntax
+    {
+        public const this(set Token OpeningToken, set [IStatementSyntax] Statements, set Token ClosingToken);
+        public const this(set [IStatementSyntax] Statements)
+        {
+            this.OpeningToken = Token.RBraces;
+            this.ClosingToken = Token.LBraces;
+        }
+
+        public Token OpeningToken { const get; private set; }
+        public [IStatementSyntax] Statements { const get; private set; }
+        public Token ClosingToken { const get; private set; }
+
+        public SourceLocation Location
+        {
+            const get
+            {
+                var result = OpeningToken.Location;
+                foreach (var item in Statements)
+                    result = result.Concat(item.GetSourceLocation());
+                return result.Concat(ClosingToken.Location);
+            }
+        }
+
+        public IStatement CreateStatement(ISyntaxState State)
+        {
+            var children = new List<IStatement>();
+            State.PushScope();
+            foreach (var item in Statements)
+            {
+                children.Add(item.CreateVerifiedStatement(State));
+            }
+            children.Add(State.PopScope());
+            return new BlockStatement(children);
+        }
+
+        public override string ToString()
+        {
+            return GetCode().ToString();
+        }
+
+        public CodeBuilder GetCode()
+        {
+            CodeBuilder builder = new CodeBuilder();
+            builder.AddLine(OpeningToken.ToString());
+            builder.IncreaseIndentation();
+            foreach (var item in Statements)
+            {
+                builder.AddCodeBuilder(item.GetCode());
+            }
+            builder.DecreaseIndentation();
+            builder.AddLine(ClosingToken.ToString());
+            return builder;
+        }
+    }
+}

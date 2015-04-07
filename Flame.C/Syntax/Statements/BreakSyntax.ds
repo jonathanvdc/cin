@@ -1,0 +1,38 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Expressions;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+	public class BreakSyntax : LineStatementSyntax, ISourceSyntax
+    {
+        public const this()
+        {
+            this.BreakKeyword = new Token(TokenType.BreakKeyword, "break");
+        }
+        public const this(set Token BreakKeyword, set Token Semicolon);
+
+        public Token BreakKeyword { const get; private set; }
+
+		public SourceLocation Location
+		{
+			const get return BreakKeyword.Location.Concat(Semicolon.Location);
+		}
+
+        public override IStatement CreateStatement(ISyntaxState State)
+        {
+            return new BreakStatement();
+        }
+
+        protected override CodeBuilder GetStatementCode()
+        {
+            CodeBuilder cb = new CodeBuilder();
+            cb.Append(BreakKeyword.ToString());
+            return cb;
+        }
+    }
+}

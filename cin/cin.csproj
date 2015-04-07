@@ -1,0 +1,128 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{308862AF-A4D2-4ED2-A1DB-F900AB683832}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>cin</RootNamespace>
+    <AssemblyName>cin</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Flame, Version=0.0.65535.65535, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\libs\Flame.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Analysis">
+      <HintPath>..\libs\Flame.Analysis.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.C">
+      <HintPath>..\Flame.C\bin\Flame.C.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Cecil">
+      <HintPath>..\libs\Flame.Cecil.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.CodeDescription">
+      <HintPath>..\libs\Flame.CodeDescription.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Compiler, Version=0.0.65535.65535, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\libs\Flame.Compiler.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Cpp">
+      <HintPath>..\libs\Flame.Cpp.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Front">
+      <HintPath>..\libs\Flame.Front.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Front.Common">
+      <HintPath>..\libs\Flame.Front.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.MIPS">
+      <HintPath>..\libs\Flame.MIPS.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Python">
+      <HintPath>..\libs\Flame.Python.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Recompilation">
+      <HintPath>..\libs\Flame.Recompilation.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.RT">
+      <HintPath>..\libs\Flame.RT.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Syntax, Version=0.0.65535.65535, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\libs\Flame.Syntax.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.TextContract">
+      <HintPath>..\libs\Flame.TextContract.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Verification">
+      <HintPath>..\libs\Flame.Verification.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.XmlDocs">
+      <HintPath>..\libs\Flame.XmlDocs.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil">
+      <HintPath>..\libs\Mono.Cecil.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil.Mdb">
+      <HintPath>..\libs\Mono.Cecil.Mdb.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil.Pdb">
+      <HintPath>..\libs\Mono.Cecil.Pdb.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil.Rocks">
+      <HintPath>..\libs\Mono.Cecil.Rocks.dll</HintPath>
+    </Reference>
+    <Reference Include="Pixie">
+      <HintPath>..\libs\Pixie.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="CFileHandler.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

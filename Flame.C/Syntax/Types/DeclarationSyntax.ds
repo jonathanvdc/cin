@@ -1,0 +1,41 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Flame.Compiler;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class DeclarationSyntax : ITypeSyntax, ISourceSyntax
+    {
+        public const this(set ITypeSyntax ElementType, set IDeclaratorSyntax Declarator);
+
+        public ITypeSyntax ElementType { const get; private set; }
+        public IDeclaratorSyntax Declarator { const get; private set; }
+
+        public string Name { const get return Declarator.Name; }
+        public IType CreateType(ISyntaxState State)
+        {
+            return Declarator.CreateType(ElementType.CreateVerifiedType(State), (ICSyntaxState)State);
+        }
+
+        public bool IsVariable
+        {
+            const get return ElementType.IsVariable;
+        }
+
+        public SourceLocation Location
+        {
+            const get return ElementType.GetSourceLocation()
+                            .Concat(Declarator.GetSourceLocation());
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            var cb = ElementType.GetCode();
+            cb.Append(Declarator.GetCode());
+            return cb;
+        }
+    }
+}

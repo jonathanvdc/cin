@@ -1,0 +1,127 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Flame.Compiler;
+using Flame.Compiler.Expressions;
+using Flame.Compiler.Variables;
+using Flame.DSharp.Lexer;
+using Flame.C.Build;
+using Pixie;
+
+namespace Flame.Syntax.C
+{
+    public class InvocationSyntax : IExpressionSyntax, ISourceSyntax
+    {
+        public const this(set IExpressionSyntax Method, set DelimitedList<IExpressionSyntax> Arguments);
+
+        public IExpressionSyntax Method { const get; private set; }
+        public DelimitedList<IExpressionSyntax> Arguments { const get; private set; }
+
+        public SourceLocation Location
+        {
+        	const get
+        	{
+        		return Method.GetSourceLocation().Concat(Arguments.Location);
+        	}
+        }
+
+        public static const void AppendCallSignature(CodeBuilder SignatureBuilder, IType[] argTypes, IConverter<IType, string> TypeNamer)
+        {
+    	    SignatureBuilder.Append('(');
+        	bool first = true;
+        	foreach (var item in argTypes)
+        	{
+        		if (first)
+        			first = false;
+        		else
+        			SignatureBuilder.Append(", ");
+
+        		if (item == null) SignatureBuilder.Append("<unresolved type>");
+        		else SignatureBuilder.Append(TypeNamer.Convert(item));
+        	}
+        	SignatureBuilder.Append(')');
+        }
+
+        public static const IMarkupNode CreateSignatureDiff(IMethod Method, IType[] ArgumentTypes, IConverter<IType, string> TypeNamer)
+        {
+            var nodes = new List<IMarkupNode>();
+            var retType = Method.ReturnType;
+            if (retType == null)
+            {
+                nodes.Add(TypeDiffComparer.ToTextNode("void"));
+            }
+            else
+            {
+                nodes.Add(TypeDiffComparer.ToTextNode(TypeNamer.Convert(Method.ReturnType)));
+            }
+            nodes.Add(TypeDiffComparer.ToTextNode(" "));
+            nodes.Add(TypeDiffComparer.ToTextNode(Method.FullName));
+            var methodDiffBuilder = new MethodDiffComparer(TypeNamer);
+            nodes.Add(methodDiffBuilder.CompareArguments(ArgumentTypes, Method));
+            return new MarkupNode("node", nodes);
+        }
+
+        public static const CodeBuilder CreateExpectedSignatureDescription(CodeBuilder MethodCode, IType[] ArgumentTypes, IConverter<IType, string> TypeNamer)
+        {
+            CodeBuilder expectedSignature = new CodeBuilder();
+        	expectedSignature.Append("'");
+        	AppendCallSignature(expectedSignature, ArgumentTypes, TypeNamer);
+        	expectedSignature.Append("'");
+        	return expectedSignature;
+        }
+
+        public const IExpression CreateExpression(ISyntaxState State)
+        {
+            var delegateExpr = Method.CreateVerifiedExpression(State);
+
+            var argExprs = Arguments.CreateVerifiedExpressions(State);
+            var argTypes = argExprs.Types;
+
+            [IMethod] matches = new IMethod[] { MethodType.GetMethod(delegateExpr.Type) };
+
+            IMethod method = matches.GetBestMethod(null, argTypes);
+
+            if (method == null)
+            {
+                var namer = State.TypeNamer;
+            	var expectedSignature = CreateExpectedSignatureDescription(Method.GetCode(), argTypes, namer).Trim();
+
+                var thisCode = this.GetCode().Trim();
+
+            	var failedMatches = Enumerable.ToArray<IMethod>(Enumerable.OfType<IMethod>(matches));
+            	if (failedMatches.Length > 0)
+            	{
+            		var failedMatchesList = new List<IMarkupNode>();
+            		foreach (var item in failedMatches)
+            		{
+                        failedMatchesList.Add(CreateSignatureDiff(item, argTypes, namer));
+            		}
+                    string listHeader = "Method call '" + thisCode.ToString() + "' could not be resolved. Expected signature compatible with " + expectedSignature.ToString() + ". Incompatible or ambiguous matches:";
+            		var messageNode = ListExtensions.CreateList(listHeader, failedMatchesList);
+                    State.Log.LogError(new LogEntry("Method resolution error", messageNode, Location));
+            	}
+            	else
+            	{
+                    var thisMethodCode = this.Method.GetCode().Trim();
+            		State.Log.LogError(new LogEntry("Method resolution error", "Method call '" + thisCode.ToString() + "' could not be resolved because '" + thisMethodCode.ToString() + "' was not recognized as function or type member. Expected signature compatible with " + expectedSignature.ToString() + ".", Location));
+            	}
+            }
+
+            return new InvocationExpression(delegateExpr, argExprs);
+        }
+
+        public override const string ToString()
+        {
+            return GetCode().ToString();
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            CodeBuilder sb = new CodeBuilder();
+            sb.Append(Method.GetCode());
+            sb.Append(Arguments.GetCode());
+            return sb;
+        }
+    }
+}

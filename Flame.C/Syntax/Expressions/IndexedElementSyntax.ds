@@ -1,0 +1,58 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Flame.Compiler;
+using Flame.Compiler.Expressions;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Variables;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class IndexedElementSyntax : VariableSyntaxBase, ISourceSyntax
+    {
+		public const this(set IExpressionSyntax Caller, set DelimitedList<IExpressionSyntax> Arguments);
+
+        public IExpressionSyntax Caller { const get; private set; }
+        public DelimitedList<IExpressionSyntax> Arguments { const get; private set; }
+
+        public SourceLocation Location
+        {
+        	const get
+        	{
+                return Caller.GetSourceLocation().Concat(Arguments.Location);
+        	}
+        }
+
+        public override const IVariable CreateVariable(ISyntaxState State)
+        {
+            var args = Enumerable.ToArray<IExpression>(Arguments.CreateVerifiedExpressions(State));
+
+            var callerExpr = Caller.CreateVerifiedExpression(State);
+
+            var elemVariable = new ElementVariable(callerExpr, args);
+
+            if (!elemVariable.CanResolve)
+            {
+                var callerCode = Caller.GetCode().Trim();
+                var thisCode = this.GetCode().Trim();
+            	State.Log.LogError(new LogEntry("Indexer resolution error", "Indexer property on '" + callerCode.ToString() + "' could not be resolved in '" + thisCode.ToString() + "'", Location));
+            }
+
+            return elemVariable;
+        }
+
+        #region GetCode
+
+        public override CodeBuilder GetCode()
+        {
+            CodeBuilder sb = new CodeBuilder();
+            sb.Append(Caller.GetCode());
+            sb.Append(Arguments.GetCode());
+            return sb;
+        }
+
+        #endregion
+    }
+}

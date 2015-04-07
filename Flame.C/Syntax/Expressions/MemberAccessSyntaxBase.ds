@@ -1,0 +1,109 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Flame.Compiler;
+using Flame.Compiler.Expressions;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Variables;
+using Flame.C.Lexer;
+using Flame.C.Parser;
+
+namespace Flame.Syntax.C
+{
+    public abstract class MemberAccessSyntaxBase : VariableSyntaxBase, ISourceSyntax
+    {
+    	public const this();
+        public const this(set IExpressionSyntax Target, set Token Operator, set Token Member);
+
+        public IExpressionSyntax Target { const get; protected set; }
+        public Token Operator { const get; protected set; }
+        public Token Member { const get; protected set; }
+
+        public SourceLocation Location
+        {
+        	const get return Target.GetSourceLocation().Concat(MemberAccessLocation);
+        }
+
+        public SourceLocation MemberAccessLocation
+        {
+        	const get return Operator.Location.Concat(Member.Location);
+        }
+
+        public abstract IVariable GetCallerVariable(ISyntaxState State);
+
+        public override string ToString()
+        {
+            return this.GetCode().ToString();
+        }
+
+        public override CodeBuilder GetCode()
+        {
+            var cb = Target.GetCode();
+            cb.Append(Operator.ToString());
+            cb.Append(Member.ToString());
+            return cb;
+        }
+
+        #region CreateAddressToValueExpression
+
+        public static IExpression CreateAddressToValueExpression(IVariable Variable)
+        {
+            IExpression callerExpr;
+            if (Variable is IUnmanagedVariable)
+            {
+                callerExpr = ((IUnmanagedVariable)Variable).CreateAddressOfExpression();
+            }
+            else
+            {
+                var placeholder = new LateBoundVariable(Variable.Type);
+
+                callerExpr = new Expressions.InitializedExpression(placeholder.CreateSetStatement(Variable.CreateGetExpression()),
+                    placeholder.CreateAddressOfExpression(),
+                    placeholder.CreateReleaseStatement());
+                // This may not be the best place to release the temporary variable. Ideally, it would be released after usage.
+            }
+            return callerExpr;
+        }
+
+        #endregion
+
+        public static IVariable CreateVariable(IVariable Caller, IType CallerType, string MemberName, ISyntaxState State)
+        {
+        	var members = State.MemberProvider.GetMembers(CallerType, MemberName);
+        	var possibleFields = Enumerable.OfType<IField>(members);
+            var field = possibleFields.GetField(MemberName);
+            if (field != null)
+            {
+            	if (field.IsStatic)
+                	return new FieldVariable(field, null);
+                else if (CallerType.IsValueType)
+                	return new ValueTypeFieldVariable(field, Caller);
+                else
+                	return new FieldVariable(field, Caller.CreateGetExpression());
+            }
+
+            return null;
+        }
+
+        public override IVariable CreateVariable(ISyntaxState State)
+        {
+            var variable = GetCallerVariable(State);
+
+            IType exprType;
+            if (variable == null)
+            {
+                exprType = null;
+            }
+            else
+            {
+                exprType = variable.Type;
+            }
+
+            string name = Member.TokenValue;
+
+            var result = CreateVariable(variable, exprType, name, State);
+
+            return result;
+        }
+    }
+}

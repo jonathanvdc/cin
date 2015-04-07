@@ -1,0 +1,38 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Expressions;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+	public class ContinueSyntax : LineStatementSyntax, ISourceSyntax
+    {
+        public const this()
+        {
+            this.ContinueKeyword = new Token(TokenType.ContinueKeyword, "continue");
+        }
+        public const this(set Token ContinueKeyword, set Token Semicolon);
+
+        public Token ContinueKeyword { const get; private set; }
+
+        public SourceLocation Location
+		{
+			const get return ContinueKeyword.Location.Concat(Semicolon.Location);
+		}
+
+        public override IStatement CreateStatement(ISyntaxState State)
+        {
+            return new ContinueStatement();
+        }
+
+        protected override CodeBuilder GetStatementCode()
+        {
+            CodeBuilder cb = new CodeBuilder();
+            cb.Append(ContinueKeyword.TokenValue);
+            return cb;
+        }
+    }
+}

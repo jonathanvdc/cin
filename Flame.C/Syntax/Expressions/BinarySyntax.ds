@@ -1,0 +1,81 @@
+using System;
+using Flame.Compiler;
+using Flame.Compiler.Expressions;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class BinarySyntax : IExpressionSyntax, ISourceSyntax
+    {
+        public const this(set IExpressionSyntax Left, set Token OpToken, set IExpressionSyntax Right);
+
+        public IExpressionSyntax Left { const get; private set; }
+        public Token OpToken { const get; private set; }
+        public IExpressionSyntax Right { const get; private set; }
+
+        public SourceLocation Location
+        {
+            const get return Left.GetSourceLocation().Concat(OpToken.Location).Concat(Right.GetSourceLocation());
+        }
+
+        public Operator Op
+        {
+            const get
+            {
+                if (OpToken.Type == TokenType.Plus)
+                    return Operator.Add;
+                else if (OpToken.Type == TokenType.Minus)
+                    return Operator.Subtract;
+                else if (OpToken.Type == TokenType.Asterisk)
+                    return Operator.Multiply;
+                else if (OpToken.Type == TokenType.Slash)
+                    return Operator.Divide;
+                else if (OpToken.Type == TokenType.Percent)
+                    return Operator.Remainder;
+                else if (OpToken.Type == TokenType.LeftShift)
+                    return Operator.LeftShift;
+                else if (OpToken.Type == TokenType.RightShift)
+                    return Operator.RightShift;
+                else if (OpToken.Type == TokenType.EqualsEquals)
+                    return Operator.CheckEquality;
+                else if (OpToken.Type == TokenType.NotEquals)
+                    return Operator.CheckInequality;
+                else if (OpToken.Type == TokenType.LessThan)
+                    return Operator.CheckLessThan;
+                else if (OpToken.Type == TokenType.GreaterThan)
+                    return Operator.CheckGreaterThan;
+                else if (OpToken.Type == TokenType.LessThanOrEquals)
+                    return Operator.CheckLessThanOrEqual;
+                else if (OpToken.Type == TokenType.GreaterThanOrEquals)
+                    return Operator.CheckGreaterThanOrEqual;
+                else if (OpToken.Type == TokenType.Bar)
+                    return Operator.Or;
+                else if (OpToken.Type == TokenType.And)
+                    return Operator.And;
+                else if (OpToken.Type == TokenType.Caret)
+                    return Operator.Xor;
+                else if (OpToken.Type == TokenType.BarBar)
+                    return Operator.LogicalOr;
+                else if (OpToken.Type == TokenType.AndAnd)
+                    return Operator.LogicalAnd;
+                else
+                    return Operator.Undefined;
+            }
+        }
+
+        public const IExpression CreateExpression(ISyntaxState State)
+        {
+            var lExpr = Left.CreateVerifiedExpression(State);
+            var rExpr = Right.CreateVerifiedExpression(State);
+            return new DirectBinaryExpression(lExpr, Op, rExpr);
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            var cb = Left.GetCode();
+            cb.Append(OpToken.ToString());
+            cb.Append(Right.GetCode());
+            return cb;
+        }
+    }
+}

@@ -1,0 +1,63 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Flame.Compiler;
+using Flame.C.Build;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+	public class StructDeclarationSyntax : ITypeSyntax, ISourceSyntax
+	{
+		public const this(set Token StructKeyword, set Token Identifier);
+
+        public Token StructKeyword { const get; private set; }
+		public Token Identifier { const get; private set; }
+
+		public SourceLocation Location
+		{
+            const get
+            {
+                return StructKeyword.Location.Concat(Identifier.Location);
+            }
+		}
+
+        public string TypeName
+        {
+        	const get
+            {
+                if (Identifier.Type == TokenType.UNDEFINED) return null;
+                else return Identifier.TokenValue;
+            }
+        }
+
+        public IType CreateType(ISyntaxState State)
+        {
+            var cState = (ICSyntaxState)State;
+        	var structType = new SyntaxStruct(this, cState);
+            return cState.Declare(structType);
+        }
+
+        public override string ToString()
+        {
+            return GetCode().ToString();
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            CodeBuilder cb = new CodeBuilder();
+            cb.Append(StructKeyword.ToString());
+            if (Identifier.Type != TokenType.UNDEFINED)
+            {
+                cb.Append(Identifier.ToString());
+            }
+            return cb;
+        }
+
+        public bool IsVariable
+        {
+            const get return false;
+        }
+	}
+}

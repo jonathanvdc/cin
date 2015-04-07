@@ -1,0 +1,8 @@
+
+namespace Flame.Syntax.C
+{
+    public interface IDeclarationSyntax : ISyntaxNode
+    {
+        void Declare(ICSyntaxState State);
+    }
+}

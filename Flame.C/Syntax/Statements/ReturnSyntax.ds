@@ -1,0 +1,45 @@
+using System;
+using Flame.Compiler;
+using Flame.Compiler.Statements;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class ReturnSyntax : IStatementSyntax, ISourceSyntax
+    {
+        public const this(set Token ReturnKeyword, set Token Semicolon)
+        {
+            this.Value = null;
+        }
+        public const this(set Token ReturnKeyword, set IExpressionSyntax Value, set Token Semicolon);
+
+        public Token ReturnKeyword { const get; private set; }
+        public IExpressionSyntax Value { const get; private set; }
+        public Token Semicolon { const get; private set; }
+
+        public SourceLocation Location
+        {
+            const get return ReturnKeyword.Location.Concat(Value.GetSourceLocation()).Concat(Semicolon.Location);
+        }
+
+        public const IStatement CreateStatement(ISyntaxState State)
+        {
+            if (Value == null)
+            {
+                return new ReturnStatement();
+            }
+            else
+            {
+                return new ReturnStatement(Value.CreateVerifiedExpression(State));
+            }
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            var cb = new CodeBuilder(ReturnKeyword.ToString());
+            cb.Append(Value.GetCode());
+            cb.Append(Semicolon.ToString());
+            return cb;
+        }
+    }
+}

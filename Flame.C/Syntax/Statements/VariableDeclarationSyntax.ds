@@ -1,0 +1,68 @@
+using System;
+using System.Collections.Generic;
+using Flame.Compiler;
+using Flame.Compiler.Variables;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Expressions;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class VariableDeclarationSyntax : LineStatementSyntax, ISourceSyntax
+    {
+        public const this(set ITypeSyntax Type, set SeparatedList<SingleVariableDeclaration> Declarations, set Token Semicolon);
+
+        public ITypeSyntax Type { const get; private set; }
+        public SeparatedList<SingleVariableDeclaration> Declarations { const get; private set; }
+
+        public SourceLocation Location
+        {
+            const get return Type.GetSourceLocation().Concat(Declarations.Location);
+        }
+
+        public const [string] VariableNames
+        {
+            const get
+            {
+            	List<string> names = new List<string>();
+            	foreach (var item in Declarations)
+            	{
+            		names.Add(item.Name);
+            	}
+                return names;
+            }
+        }
+
+        public [IVariable] GetDeclaredVariables(ISyntaxState State)
+        {
+        	var list = new List<IVariable>();
+        	foreach (var item in Declarations)
+        	{
+        		list.Add(item.GetDeclaredVariable(State));
+        	}
+        	return list;
+        }
+
+        public override IStatement CreateStatement(ISyntaxState State)
+        {
+            return CreateStatement(State, null);
+        }
+
+        public IStatement CreateStatement(ISyntaxState State, IType TypeHint)
+        {
+            var children = new List<IStatement>();
+            foreach (var item in Declarations)
+            {
+                children.Add(item.CreateStatement(Type, State, TypeHint));
+            }
+            return new BlockStatement(children);
+        }
+
+        protected override CodeBuilder GetStatementCode()
+        {
+            CodeBuilder cb = Type.GetCode();
+            cb.Append(Declarations.GetCode());
+            return cb;
+        }
+    }
+}

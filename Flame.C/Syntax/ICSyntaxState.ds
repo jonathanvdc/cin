@@ -1,0 +1,13 @@
+using Flame.C.Build;
+
+namespace Flame.Syntax.C
+{
+    public interface ICSyntaxState : ISyntaxState
+    {
+        CompilationUnit DeclaringUnit { const get; }
+
+        IMethod Declare(SyntaxFunction Method);
+        IType Declare(SyntaxStruct Type);
+        IField Declare(SyntaxField Field);
+    }
+}

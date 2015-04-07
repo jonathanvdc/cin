@@ -1,0 +1,70 @@
+using System;
+using System.Collections.Generic;
+using Flame.Compiler;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Expressions;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class ForSyntax : IStatementSyntax, ISourceSyntax
+    {
+        public const this(set Token ForKeyword, set Token LeadingParentheses,
+            set IStatementSyntax Initialization, set IExpressionSyntax Condition,
+            set Token ConditionSemicolon, set IStatementSyntax DeltaStatement,
+            set Token TrailingParentheses, set IStatementSyntax Body);
+
+        public Token ForKeyword { const get; private set; }
+        public Token LeadingParentheses { const get; private set; }
+        public IStatementSyntax Initialization { const get; private set; }
+        public IExpressionSyntax Condition { const get; private set; }
+        public Token ConditionSemicolon { const get; private set; }
+        public IStatementSyntax DeltaStatement { const get; private set; }
+        public Token TrailingParentheses { const get; private set; }
+        public IStatementSyntax Body { const get; private set; }
+
+        public SourceLocation Location
+        {
+            const get
+            {
+                return ForKeyword.Location.Concat(LeadingParentheses.Location)
+                                          .Concat(Initialization.GetSourceLocation())
+                                          .Concat(Condition.GetSourceLocation())
+                                          .Concat(ConditionSemicolon.Location)
+                                          .Concat(DeltaStatement.GetSourceLocation())
+                                          .Concat(TrailingParentheses.Location)
+                                          .Concat(Body.GetSourceLocation());
+            }
+        }
+
+        public IStatement CreateStatement(ISyntaxState State) : IStatementSyntax.CreateStatement
+        {
+        	State.PushScope();
+            var setup = Initialization.CreateStatement(State);
+            var condExpr = Condition.CreateExpression(State);
+            var change = DeltaStatement.CreateStatement(State);
+            var body = Body.CreateStatement(State);
+            var cleanup = State.PopScope();
+            return new ForStatement(setup, condExpr, change, body, cleanup);
+        }
+
+        public override string ToString()
+        {
+            return GetCode().ToString();
+        }
+
+        public CodeBuilder GetCode() : ISyntaxNode.GetCode
+        {
+            CodeBuilder cb = new CodeBuilder();
+            cb.Append(ForKeyword.TokenValue);
+            cb.Append(LeadingParentheses.ToString());
+            cb.Append(Initialization.GetCode());
+            cb.Append(Condition.GetCode());
+            cb.Append(ConditionSemicolon.ToString());
+            cb.Append(DeltaStatement.GetCode());
+            cb.Append(TrailingParentheses.ToString());
+            cb.Append(Body.GetCode());
+            return cb;
+        }
+    }
+}

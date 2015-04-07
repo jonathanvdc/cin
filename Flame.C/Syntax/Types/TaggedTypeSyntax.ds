@@ -1,0 +1,67 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Flame.Compiler;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class TaggedTypeSyntax : ITypeSyntax, ISourceSyntax
+    {
+        public const this(set [Token] Tokens);
+
+        public [Token] Tokens { const get; private set; }
+
+        public SourceLocation Location
+        {
+            const get
+            {
+                var result = Enumerable.First<Token>(Tokens).Location;
+                foreach (var item in Tokens)
+                {
+                    result = result.Concat(item.Location);
+                }
+                return result;
+            }
+        }
+
+        public string TypeName
+        {
+            const get
+            {
+                StringBuilder result = new StringBuilder();
+                foreach (var item in Tokens)
+                {
+                    if (result.Length > 0)
+                        result.Append(" ");
+                    result.Append(item.TokenValue);
+                }
+                return result.ToString();
+            }
+        }
+
+        public IType CreateType(ISyntaxState State)
+        {
+            return State.Binder.BindType(TypeName);
+        }
+
+        public override string ToString()
+        {
+            return GetCode().ToString();
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            CodeBuilder cb = new CodeBuilder();
+            foreach (var item in Tokens)
+                cb.Append(item.ToString());
+            return cb;
+        }
+
+        public bool IsVariable
+        {
+            const get return false;
+        }
+    }
+}

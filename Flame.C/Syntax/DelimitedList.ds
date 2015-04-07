@@ -1,0 +1,53 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Flame.Compiler;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+	public class DelimitedList<T> : ISyntaxNode, ISourceSyntax, IEnumerable<T>
+		where T : ISyntaxNode
+	{
+		public const this(set Token LeftDelimiter, set SeparatedList<T> Items, set Token RightDelimiter);
+
+		public Token LeftDelimiter { const get; private set; }
+		public SeparatedList<T> Items { const get; private set; }
+		public Token RightDelimiter { const get; private set; }
+
+		public SourceLocation Location
+		{
+			const get
+			{
+				return LeftDelimiter.Location.Concat(Items.Location).Concat(RightDelimiter.Location);
+			}
+		}
+
+		public int Count { const get return Items.Count; }
+
+		public T this[int Index]
+		{
+			const get return Items[Index];
+		}
+
+		public [<T>] GetGenericEnumerator() : IEnumerable<T>.GetEnumerator
+		{
+			return Items.GetGenericEnumerator();
+		}
+
+		public System.Collections.IEnumerator GetObjectEnumerator() : System.Collections.IEnumerable.GetEnumerator
+		{
+			return GetGenericEnumerator();
+		}
+
+		public CodeBuilder GetCode()
+		{
+			CodeBuilder cb = new CodeBuilder();
+			cb.Append(LeftDelimiter.ToString());
+			cb.Append(Items.GetCode());
+			cb.Append(RightDelimiter.ToString());
+			return cb;
+		}
+	}
+}

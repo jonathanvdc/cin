@@ -1,0 +1,69 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Flame.Compiler;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+	public class SeparatedList<T> : ISyntaxNode, ISourceSyntax, IEnumerable<T>
+		where T : ISyntaxNode
+	{
+		public const this(set IReadOnlyList<SeparatedItem<T>> Items);
+		public const this(IReadOnlyList<T> Values, IReadOnlyList<Token> Separators)
+		{
+			List<SeparatedItem<T>> pairs = new List<SeparatedItem<T>>();
+			for (int i = 0; i < Values.Count; i++)
+			{
+				if (i > 0 && i + 1 < Separators.Count)
+					pairs.Add(new SeparatedItem<T>(Separators[i], Values[i]));
+				else
+					pairs.Add(new SeparatedItem<T>(Values[i]));
+			}
+			this.Items = pairs;
+		}
+
+		public IReadOnlyList<SeparatedItem<T>> Items { const get; private set; }
+
+		public int Count { const get return Items.Count; }
+
+		public T this[int Index]
+		{
+			const get return Items[Index].Item;
+		}
+
+		public SourceLocation Location
+		{
+			const get
+			{
+				return Items.GetSourceLocation();
+			}
+		}
+
+		public [<T>] GetGenericEnumerator() : IEnumerable<T>.GetEnumerator
+		{
+			List<T> nodes = new List<T>();
+			foreach (var item in Items)
+			{
+				nodes.Add(item.Item);
+			}
+			return nodes.GetEnumerator();
+		}
+
+		public System.Collections.IEnumerator GetObjectEnumerator() : System.Collections.IEnumerable.GetEnumerator
+		{
+			return GetGenericEnumerator();
+		}
+
+		public CodeBuilder GetCode()
+		{
+			CodeBuilder cb = new CodeBuilder();
+			foreach (var item in Items)
+			{
+				cb.Append(item.GetCode());
+			}
+			return cb;
+		}
+	}
+}

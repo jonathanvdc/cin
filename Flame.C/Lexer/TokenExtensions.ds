@@ -1,0 +1,273 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Flame.Compiler;
+
+namespace Flame.C.Lexer
+{
+	public static class TokenExtensions
+	{
+		#region GetLeadingTrivia
+
+		public static const [Token] GetLeadingTrivia(this Token Item)
+		{
+			if (Item is RelevantToken)
+			{
+				return ((RelevantToken)Item).LeadingTrivia;
+			}
+			else
+			{
+				return Enumerable.Empty<Token>();
+			}
+		}
+
+		#endregion
+
+		#region GetAllTrivia
+
+		public static const [Token] GetAllTrivia(this Token Item)
+			return Item.GetLeadingTrivia();
+
+		public static const [Token] GetAllTrivia(this IEnumerable<Token> Tokens)
+		{
+			List<Token> trivia = new List<Token>();
+			foreach (var item in Tokens)
+			{
+				trivia.AddRange(item.GetLeadingTrivia());
+			}
+			return trivia;
+		}
+
+		#endregion
+
+		#region IsTrivia
+
+		public static const bool IsTrivia(this TokenType TokenType)
+        {
+        	return (TokenType == TokenType.EndOfFile || TokenType == TokenType.Whitespace ||
+        	TokenType == TokenType.BigComment || TokenType == TokenType.LineComment ||
+        	TokenType == TokenType.DescriptionComment || TokenType == TokenType.PreprocessorDirective ||
+        	TokenType == TokenType.UNDEFINED);
+        }
+
+		#endregion
+
+        #region IsValueToken
+
+        public static const bool IsValueToken(this TokenType Token)
+        {
+            return Token == TokenType.Float32 || Token == TokenType.Float64 ||
+        		Token == TokenType.Integer || Token == TokenType.BinaryInteger ||
+        		Token == TokenType.HexInteger || Token == TokenType.String ||
+        		Token == TokenType.Char || Token == TokenType.Identifier ||
+        		Token == TokenType.TrueLiteral || Token == TokenType.FalseLiteral;
+        }
+
+        #endregion
+
+        #region IsTypeKindToken
+
+        public static const bool IsTypeKindToken(this TokenType Token)
+        {
+            return Token == TokenType.StructKeyword || Token == TokenType.EnumKeyword ||
+        		Token == TokenType.UnionKeyword || Token == TokenType.UnsignedKeyword ||
+				Token == TokenType.SignedKeyword || Token == TokenType.IntKeyword ||
+				Token == TokenType.LongKeyword || Token == TokenType.ShortKeyword ||
+				Token == TokenType.FloatKeyword || Token == TokenType.DoubleKeyword ||
+				Token == TokenType.VoidKeyword || Token == TokenType.CharKeyword;
+        }
+
+        #endregion
+
+        #region IsModifier
+
+        public static const bool IsModifier(this TokenType Token)
+        {
+        	return Token == TokenType.StaticKeyword || Token == TokenType.InlineKeyword ||
+        			Token.IsTypeKindToken();
+        }
+
+        #endregion
+
+        #region IsAssignmentToken
+
+        public static const bool IsAssignmentToken(this TokenType Token)
+        {
+        	return Token == TokenType.Equals || Token == TokenType.AndEquals ||
+        		Token == TokenType.BarEquals || Token == TokenType.PercentEquals ||
+        		Token == TokenType.CaretEquals || Token == TokenType.PlusEquals ||
+        		Token == TokenType.MinusEquals || Token == TokenType.AsteriskEquals ||
+        		Token == TokenType.SlashEquals || Token == TokenType.TildeEquals;
+        }
+
+        #endregion
+
+        #region IsAssignmentToken
+
+        public static const bool IsKeyword(this TokenType Token)
+        {
+        	return 	Token == TokenType.StaticKeyword || Token == TokenType.InlineKeyword ||
+        			Token == TokenType.ConstKeyword || Token == TokenType.WhileKeyword ||
+        			Token == TokenType.ReturnKeyword || Token == TokenType.ContinueKeyword ||
+        			Token == TokenType.IfKeyword || Token == TokenType.BreakKeyword ||
+        			Token == TokenType.ForKeyword || Token == TokenType.StructKeyword ||
+        			Token == TokenType.ElseKeyword || Token == TokenType.EnumKeyword ||
+					Token == TokenType.UnionKeyword;
+        }
+
+        #endregion
+
+        #region Binary
+
+        public static const bool IsTypeBinaryExpressionToken(this TokenType Token)
+        {
+            return Token == TokenType.IsKeyword;
+        }
+
+        public static const bool IsBinaryExpressionToken(this TokenType Token)
+        {
+            return Token == TokenType.AndAnd || Token == TokenType.And ||
+        		Token == TokenType.BarBar || Token == TokenType.Bar ||
+        		Token == TokenType.Percent || Token == TokenType.Caret ||
+        		Token == TokenType.GreaterThanOrEquals || Token == TokenType.GreaterThan ||
+        		Token == TokenType.LessThanOrEquals || Token == TokenType.LessThan ||
+        		Token == TokenType.NotEquals || Token == TokenType.EqualsEquals ||
+        		Token == TokenType.Plus || Token == TokenType.Minus ||
+        		Token == TokenType.Asterisk || Token == TokenType.Slash ||
+        		Token == TokenType.IsKeyword || Token == TokenType.LeftShift ||
+        		Token.IsAssignmentToken();
+        }
+
+        #endregion
+
+        #region Unary
+
+        public static const bool IsPrefixUnaryToken(this TokenType Token)
+        {
+        	return Token == TokenType.And || Token == TokenType.Plus ||
+        		Token == TokenType.Minus || Token == TokenType.PlusPlus ||
+        		Token == TokenType.MinusMinus || Token == TokenType.Tilde ||
+        		Token == TokenType.Not || Token == TokenType.Asterisk;
+        }
+
+        public static const bool IsPostfixUnaryToken(this TokenType Token)
+        {
+        	return Token == TokenType.PlusPlus || Token == TokenType.MinusMinus;
+        }
+
+        #endregion
+
+		#region Peek
+
+        /// <summary>
+        /// Returns the next token, without altering the token stream's state.
+        /// </summary>
+        public static PeekToken Peek(this ITokenStream Tokens)
+        {
+            return Tokens.Peek(Tokens.CurrentPosition);
+        }
+
+        /// <summary>
+        /// Returns the next token after the provided token.
+        /// </summary>
+        public static PeekToken Peek(this ITokenStream Tokens, PeekToken Token)
+        {
+            return Tokens.Peek(Token.Identifier);
+        }
+
+        #endregion
+
+        #region Next
+
+        public static Token Next(this ITokenStream Tokens, TokenType Type, ICompilerLog Log)
+        {
+            var Next = Tokens.Next();
+            Next.EnsureType(Type, Log);
+            return Next;
+        }
+
+        #endregion
+
+		#region NextNoTrivia
+
+		public static Token NextNoTrivia(this ITokenStream Tokens)
+        {
+        	List<Token> trivia = new List<Token>();
+            Token token = Tokens.Next();
+            while (token.Type != TokenType.EndOfFile && token.Type.IsTrivia())
+            {
+            	trivia.Add(token);
+                token = Tokens.Next();
+            }
+            return new RelevantToken(trivia, token);
+        }
+
+        public static Token NextNoTrivia(this ITokenStream Tokens, TokenType Type, ICompilerLog Log)
+        {
+            var Next = Tokens.PeekNoTrivia();
+            if (!Next.TokenPeek.EnsureType(Type, Log))
+            {
+            	return new Token(Type, "");
+            }
+            else
+            {
+            	return Tokens.NextNoTrivia();
+            }
+        }
+
+		#endregion
+
+		#region PeekNoTrivia
+
+        public static PeekToken PeekNoTrivia(this ITokenStream Tokens)
+        {
+            return Tokens.PeekNoTrivia(Tokens.CurrentPosition);
+        }
+        public static PeekToken PeekNoTrivia(this ITokenStream Tokens, PeekToken Token)
+        {
+            return Tokens.PeekNoTrivia(Token.Identifier);
+        }
+        public static PeekToken PeekNoTrivia(this ITokenStream Tokens, TokenIdentifier Identifier)
+        {
+        	List<Token> trivia = new List<Token>();
+            PeekToken tkn = Tokens.Peek(Identifier);
+            while (tkn.TokenPeek.Type != TokenType.EndOfFile && tkn.TokenPeek.Type.IsTrivia())
+            {
+            	trivia.Add(tkn.TokenPeek);
+                tkn = Tokens.Peek(tkn);
+            }
+            return new PeekToken(tkn.Identifier, new RelevantToken(trivia, tkn.TokenPeek));
+        }
+
+        #endregion
+
+		#region EnsureType
+
+        public static bool EnsureType(this Token Token, TokenType Type, ICompilerLog Log)
+        {
+            if (Token.Type != Type)
+            {
+           		string typeExampleString = TokenExamples.GetExampleString(Type);
+           		string tokenValString = Token.TokenValue;
+                Log.LogError(new LogEntry("Parser error", "Invalid syntax. Expected " + typeExampleString + ", got '" + tokenValString + "'.", Token.FullLocation));
+                return false;
+            }
+            else
+            {
+            	return true;
+            }
+        }
+
+        #endregion
+
+        #region Combine
+
+        public static Token Combine(this Token First, Token Second, TokenType Type)
+        {
+        	var tkn = new Token(Type, First.TokenValue + Second.TokenValue, First.SourceDocument, First.Position);
+        	return new RelevantToken(Enumerable.Concat<Token>(First.GetAllTrivia(), Second.GetAllTrivia()), tkn);
+        }
+
+        #endregion
+	}
+}

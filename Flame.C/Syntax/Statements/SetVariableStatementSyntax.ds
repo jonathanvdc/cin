@@ -1,0 +1,35 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Expressions;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class SetVariableStatementSyntax : LineStatementSyntax, ISourceSyntax
+    {
+        public const this(set ISetVariableExpressionSyntax StoreSyntax, set Token Semicolon);
+
+        public ISetVariableExpressionSyntax StoreSyntax { const get; private set; }
+
+        public SourceLocation Location
+        {
+            const get
+            {
+                return StoreSyntax.GetSourceLocation().Concat(Semicolon.Location);
+            }
+        }
+
+        public override IStatement CreateStatement(ISyntaxState State)
+        {
+            return StoreSyntax.CreateSetStatement(State);
+        }
+
+        protected override const CodeBuilder GetStatementCode()
+        {
+            return StoreSyntax.GetCode();
+        }
+    }
+}

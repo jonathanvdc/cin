@@ -1,0 +1,17 @@
+using System;
+using Flame.Compiler;
+using Flame.Compiler.Expressions;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class IntegerSyntax : LiteralSyntax
+    {
+        public const this(set Token Value);
+
+        public override const IExpression CreateExpression(ISyntaxState State, Token Value)
+        {
+            return new Int32Expression(int.Parse(Value.TokenValue));
+        }
+    }
+}

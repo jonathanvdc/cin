@@ -1,0 +1,1081 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Flame.Compiler;
+using Flame.C.Lexer;
+using Flame.Syntax;
+using Flame.Syntax.C;
+
+namespace Flame.C.Parser
+{
+    public virtual class CSyntaxParser
+    {
+        public const this(set ICompilerLog Log);
+
+		public ICompilerLog Log { const get; private set; }
+
+        #region ParseExpression
+
+        public virtual IExpressionSyntax ParseExpression(ITokenStream Tokens)
+        {
+            var firstExpr = ParseSingleExpression(Tokens);
+            var peek = Tokens.PeekNoTrivia();
+            if (peek.TokenPeek.Type.IsBinaryExpressionToken())
+            {
+                return ParseBinaryExpression(firstExpr, Tokens, int32.MaxValue);
+            }
+            else
+            {
+                return firstExpr;
+            }
+        }
+
+        #endregion
+
+        #region ParsePossibleExpression
+
+        public virtual IExpressionSyntax ParsePossibleExpression(ITokenStream Tokens)
+        {
+            var silentLog = new SilentLog(Log.Options);
+            var silentParser = new CSyntaxParser(silentLog);
+            var expr = silentParser.ParseExpression(Tokens);
+            if (expr == null || silentLog.Errors.Count > 0)
+                return null;
+            else
+            {
+                foreach (var item in silentLog.Warnings)
+                {
+                    Log.LogWarning(item);
+                }
+                return expr;
+            }
+        }
+
+        #endregion
+
+        #region ParseSingleExpression
+
+        protected virtual IExpressionSyntax ParseSingleExpression(ITokenStream Parser)
+        {
+            var token = Parser.NextNoTrivia();
+            IExpressionSyntax expr;
+            if (token.Type == TokenType.Identifier)
+            {
+                expr = new IdentifierSyntax(token);
+            }
+            else if (token.Type.IsValueToken())
+            {
+                expr = ParseValueExpression(token);
+            }
+            else if (token.Type.IsPrefixUnaryToken())
+            {
+                expr = ParsePrefixedExpression(token, Parser);
+            }
+            else if (token.Type == TokenType.RParen)
+            {
+                expr = ParseParenthesesExpression(token, Parser);
+            }
+            else
+            {
+                Log.LogError(new LogEntry("Parser error", "Could not identify token '" + token.TokenValue + "' as valid expression syntax.", token.Location));
+                return null;
+            }
+            return ParseIdentifierExpression(expr, Parser);
+        }
+
+        #endregion
+
+        #region Type Parsing
+
+        protected virtual ITypeSyntax ParseTaggedType(ITokenStream Tokens)
+        {
+            var tags = new List<Token>();
+            while (Tokens.PeekNoTrivia().Type.IsTypeKindToken())
+            {
+                tags.Add(Tokens.NextNoTrivia());
+            }
+            return new TaggedTypeSyntax(tags);
+        }
+
+        protected virtual ITypeSyntax ParseAutoType(ITokenStream Tokens)
+        {
+            return new InferredTypeSyntax(Tokens.NextNoTrivia(TokenType.AutoKeyword, Log));
+        }
+
+        protected virtual ITypeSyntax ParseIdentifierType(ITokenStream Tokens)
+        {
+            return new IdentifierTypeSyntax(Tokens.NextNoTrivia(TokenType.Identifier, Log));
+        }
+
+        #region ParseStructDefinitionSyntax
+
+        protected virtual ITypeSyntax ParseStructDefinitionSyntax(StructDeclarationSyntax Declaration, ITokenStream Tokens)
+        {
+            var leadingBraces = Tokens.NextNoTrivia(TokenType.RBraces, Log);
+            var fields = new List<VariableDeclarationSyntax>();
+            var peek = Tokens.PeekNoTrivia();
+            while (peek.Type != TokenType.EndOfFile && peek.Type != TokenType.LBraces)
+            {
+                fields.Add(ParseDeclarationStatement(Tokens));
+                peek = Tokens.PeekNoTrivia();
+            }
+            var trailingBraces = Tokens.NextNoTrivia(TokenType.LBraces, Log);
+            return new StructDefinitionSyntax(Declaration,
+                leadingBraces, fields, trailingBraces);
+        }
+
+        #endregion
+
+        protected virtual ITypeSyntax ParseStructType(ITokenStream Tokens)
+        {
+            var structKeyword = Tokens.NextNoTrivia(TokenType.StructKeyword, Log);
+            if (Tokens.PeekNoTrivia().Type == TokenType.RBraces)
+            {
+                var declSyntax = new StructDeclarationSyntax(structKeyword, Token.Undefined);
+                return ParseStructDefinitionSyntax(declSyntax, Tokens);
+            }
+            else
+            {
+                var ident = Tokens.NextNoTrivia(TokenType.Identifier, Log);
+                var declSyntax = new StructDeclarationSyntax(structKeyword, ident);
+
+                if (Tokens.PeekNoTrivia().Type == TokenType.RBraces)
+                    return ParseStructDefinitionSyntax(declSyntax, Tokens);
+                else
+                    return declSyntax;
+            }
+        }
+
+        public virtual ITypeSyntax ParseType(ITokenStream Tokens, bool MustParse)
+        {
+            var peek = Tokens.PeekNoTrivia();
+            if (peek.Type == TokenType.StructKeyword)
+            {
+                return ParseStructType(Tokens);
+            }
+            else if (peek.Type.IsTypeKindToken())
+            {
+                return ParseTaggedType(Tokens);
+            }
+            else if (peek.Type == TokenType.AutoKeyword)
+            {
+                return ParseAutoType(Tokens);
+            }
+            else if (MustParse || peek.Type == TokenType.Identifier)
+            {
+                return ParseIdentifierType(Tokens);
+            }
+            else return null;
+        }
+
+        public virtual ITypeSyntax ParseType(ITokenStream Tokens)
+        {
+            return ParseType(Tokens, true);
+        }
+
+        #endregion
+
+        #region Declarator Parsing
+
+        protected virtual IDeclaratorSyntax ParsePointerDeclarator(ITokenStream Tokens, bool RequireName)
+        {
+            var asterisk = Tokens.NextNoTrivia(TokenType.Asterisk, Log);
+            var innerDeclarator = ParseElementDeclarator(Tokens, RequireName);
+            return new PointerDeclaratorSyntax(asterisk, innerDeclarator);
+        }
+
+        protected virtual IDeclaratorSyntax ParseParenthesesDeclarator(ITokenStream Tokens, bool RequireName)
+        {
+            var rparen = Tokens.NextNoTrivia(TokenType.RParen, Log);
+            var innerDeclarator = ParseDeclarator(Tokens, RequireName);
+            var lparen = Tokens.NextNoTrivia(TokenType.LParen, Log);
+            return new ParenthesesDeclaratorSyntax(rparen, innerDeclarator, lparen);
+        }
+
+        protected virtual IDeclaratorSyntax ParseIdentifierDeclarator(ITokenStream Tokens)
+        {
+            var ident = Tokens.NextNoTrivia(TokenType.Identifier, Log);
+            return new IdentifierDeclaratorSyntax(ident);
+        }
+
+        protected virtual IDeclaratorSyntax ParseElementDeclarator(ITokenStream Tokens, bool RequireName)
+        {
+            var peek = Tokens.PeekNoTrivia();
+            if (peek.Type == TokenType.Asterisk)
+            {
+                return ParsePointerDeclarator(Tokens, RequireName);
+            }
+            else if (peek.Type == TokenType.RParen)
+            {
+                return ParseParenthesesDeclarator(Tokens, RequireName);
+            }
+            else if (RequireName || peek.Type == TokenType.Identifier)
+            {
+                return ParseIdentifierDeclarator(Tokens);
+            }
+            else
+            {
+                return new EmptyDeclaratorSyntax();
+            }
+        }
+
+        protected virtual IDeclaratorSyntax ParseArrayDeclarator(IDeclaratorSyntax Element, ITokenStream Tokens)
+        {
+            var rbrackets = Tokens.NextNoTrivia(TokenType.RBrackets, Log);
+            var len = ParseExpression(Tokens);
+            var lbrackets = Tokens.NextNoTrivia(TokenType.LBrackets, Log);
+            return new ArrayDeclaratorSyntax(Element, rbrackets, len, lbrackets);
+        }
+
+        protected virtual IDeclaratorSyntax ParseFunctionDeclarator(IDeclaratorSyntax Element, ITokenStream Tokens)
+        {
+            var parameters = ParseParameterList(Tokens);
+            return new FunctionDeclaratorSyntax(Element, parameters);
+        }
+
+        public virtual IDeclaratorSyntax ParseDeclarator(ITokenStream Tokens, bool RequireName)
+        {
+            var elem = ParseElementDeclarator(Tokens, RequireName);
+            var peek = Tokens.PeekNoTrivia();
+            IDeclaratorSyntax result;
+            if (peek.Type == TokenType.RBrackets)
+            {
+                result = ParseArrayDeclarator(elem, Tokens);
+            }
+            else if (peek.Type == TokenType.RParen)
+            {
+                result = ParseFunctionDeclarator(elem, Tokens);
+            }
+            else
+            {
+                result = elem;
+            }
+            return result;
+        }
+
+        #endregion
+
+        #region ParseParameterList
+
+        protected virtual SeparatedList<DeclarationSyntax> ParseParameterListContents(ITokenStream Parser, TokenType RightDelimiter)
+        {
+            var exprs = new List<SeparatedItem<DeclarationSyntax>>();
+
+            var separator = Token.Undefined;
+            var peek = Parser.PeekNoTrivia();
+            while (peek.Type != RightDelimiter)
+            {
+                exprs.Add(new SeparatedItem<DeclarationSyntax>(separator, ParseDeclaration(Parser, false)));
+                peek = Parser.PeekNoTrivia();
+                if (peek.Type == TokenType.Comma)
+                {
+                    separator = Parser.NextNoTrivia();
+                }
+                else
+                {
+                    //peek.TokenPeek.EnsureType(RightDelimiter, Log);
+                    break;
+                }
+            }
+
+            return new SeparatedList<DeclarationSyntax>(exprs);
+        }
+
+        protected virtual DelimitedList<DeclarationSyntax> ParseParameterList(ITokenStream Parser, TokenType LeftDelimiter, TokenType RightDelimiter)
+        {
+            var rParen = Parser.NextNoTrivia(LeftDelimiter, Log);
+
+            var exprs = ParseParameterListContents(Parser, RightDelimiter);
+
+            var lParen = Parser.NextNoTrivia(RightDelimiter, Log);
+
+            return new DelimitedList<DeclarationSyntax>(rParen, exprs, lParen);
+        }
+
+        protected virtual DelimitedList<DeclarationSyntax> ParseParameterList(ITokenStream Parser)
+        {
+            return ParseParameterList(Parser, TokenType.RParen, TokenType.LParen);
+        }
+
+        #endregion
+
+        #region ParseDeclarationSyntax
+
+        public virtual DeclarationSyntax ParseDeclaration(ITokenStream Tokens, bool RequireName, bool MustParse)
+        {
+            var tSyntax = ParseType(Tokens, MustParse);
+            if (tSyntax == null)
+                return null;
+
+            var declSyntax = ParseDeclarator(Tokens, MustParse && RequireName);
+            if (RequireName && string.IsNullOrWhiteSpace(declSyntax.Name))
+                return null;
+
+            return new DeclarationSyntax(tSyntax, declSyntax);
+        }
+
+        public virtual DeclarationSyntax ParseDeclaration(ITokenStream Tokens, bool RequireName)
+        {
+            return ParseDeclaration(Tokens, RequireName, true);
+        }
+
+        #endregion
+
+        #region ParseParenthesesSyntax
+
+        protected virtual IExpressionSyntax ParseCastExpression(Token RParen, ITypeSyntax Type, Token LParen, ITokenStream Parser)
+        {
+            var expr = ParseSingleExpression(Parser);
+            return new CastSyntax(RParen, Type, LParen, expr);
+        }
+
+        protected virtual IExpressionSyntax ParseParenthesesExpression(Token RParen, ITokenStream Parser)
+        {
+            var pos = Parser.CurrentPosition;
+
+            var declSyntax = ParseDeclaration(Parser, false, false);
+
+            if (declSyntax != null && Parser.PeekNoTrivia().Type == TokenType.LParen)
+            {
+                var lParen = Parser.NextNoTrivia(TokenType.LParen, Log);
+                var peek = Parser.PeekNoTrivia();
+                if ((peek.Type.IsValueToken() || peek.Type == TokenType.Not || peek.Type == TokenType.Asterisk || peek.Type == TokenType.Tilde || peek.Type == TokenType.RParen || (peek.Type.IsKeyword() && !peek.Type.IsTypeBinaryExpressionToken())))
+                {
+                    return ParseCastExpression(RParen, declSyntax, lParen, Parser);
+                }
+                else
+                {
+                    var restorePoint = Parser.CurrentPosition;
+                    Parser.Seek(pos);
+                    var blockExpr = ParsePossibleExpression(Parser);
+                    if (blockExpr != null && Parser.PeekNoTrivia().Type == TokenType.LParen)
+                    {
+                        lParen = Parser.NextNoTrivia(TokenType.LParen, Log);
+                        return new ParenthesesSyntax(RParen, blockExpr, lParen);
+                    }
+                    else
+                    {
+                        Parser.Seek(restorePoint);
+                        return ParseCastExpression(RParen, declSyntax, lParen, Parser);
+                    }
+                }
+            }
+            else
+            {
+                Parser.Seek(pos);
+                var expr = ParseExpression(Parser);
+                var lParen = Parser.NextNoTrivia(TokenType.LParen, Log);
+                return new ParenthesesSyntax(RParen, expr, lParen);
+            }
+        }
+
+        #endregion
+
+        #region GetPrecendence
+
+        protected virtual int32 GetPrecedence(TokenType Token)
+        {
+            if (Token == TokenType.Percent || Token == TokenType.Asterisk || Token == TokenType.Slash)
+            {
+                return 0;
+            }
+            else if (Token == TokenType.Plus || Token == TokenType.Minus)
+            {
+                return 1;
+            }
+            else if (Token == TokenType.LeftShift || Token == TokenType.RightShift)
+            {
+                return 2;
+            }
+            else if (Token == TokenType.EqualsEquals || Token == TokenType.NotEquals)
+            {
+                return 3;
+            }
+            else if (Token == TokenType.GreaterThanOrEquals || Token == TokenType.GreaterThan ||
+                       Token == TokenType.LessThanOrEquals || Token == TokenType.LessThan ||
+                       Token == TokenType.IsKeyword)
+            {
+                return 4;
+            }
+            else if (Token == TokenType.And)
+            {
+                return 5;
+            }
+            else if (Token == TokenType.Caret)
+            {
+                return 6;
+            }
+            else if (Token == TokenType.Bar)
+            {
+                return 7;
+            }
+            else if (Token == TokenType.AndAnd)
+            {
+                return 8;
+            }
+            else if (Token == TokenType.BarBar)
+            {
+                return 9;
+            }
+            else if (Token == TokenType.Equals || Token == TokenType.AndEquals ||
+                       Token == TokenType.BarEquals || Token == TokenType.PercentEquals ||
+                       Token == TokenType.CaretEquals || Token == TokenType.PlusEquals ||
+                       Token == TokenType.MinusEquals || Token == TokenType.AsteriskEquals ||
+                       Token == TokenType.SlashEquals)
+            {
+                return 10;
+            }
+            else
+            {
+                return int32.MaxValue;
+            }
+        }
+
+        #endregion
+
+        #region CreateBinaryExpression
+
+        protected virtual IExpressionSyntax CreateBinaryExpression(IExpressionSyntax A, IExpressionSyntax B, Token Operator)
+        {
+            if (Operator.Type.IsAssignmentToken())
+            {
+                return new AssignmentSyntax((IVariableSyntax)A, Operator, B);
+            }
+            else
+            {
+                return new BinarySyntax(A, Operator, B);
+            }
+        }
+
+        protected virtual IExpressionSyntax CreateBinaryExpression(List<IExpressionSyntax> Operands, Token Operator)
+        {
+            IExpressionSyntax expr = CreateBinaryExpression(Operands[0], Operands[1], Operator);
+            for (int i = 2; i < Operands.Count; i++)
+            {
+                expr = CreateBinaryExpression(expr, Operands[i], Operator);
+            }
+            return expr;
+        }
+
+        private static Token PeekOperator(ITokenStream Parser)
+        {
+            var peek = Parser.PeekNoTrivia();
+
+            if (peek.Type == TokenType.GreaterThan)
+            {
+                var peek2 = Parser.Peek(peek);
+                if (peek2.Type == TokenType.GreaterThan)
+                {
+                    return peek.TokenPeek.Combine(peek2.TokenPeek, TokenType.RightShift);
+                }
+            }
+
+            return peek.TokenPeek;
+        }
+
+        private static Token ParseOperator(ITokenStream Parser)
+        {
+            var op = Parser.NextNoTrivia();
+
+            if (op.Type == TokenType.GreaterThan)
+            {
+                var peek = Parser.Peek();
+                if (peek.Type == TokenType.GreaterThan)
+                {
+                    return op.Combine(Parser.Next(), TokenType.RightShift);
+                }
+            }
+
+            return op;
+        }
+
+        protected IExpressionSyntax ParseBinaryExpression(IExpressionSyntax FirstExpression, ITokenStream Parser, int MaxPrecedence)
+        {
+            var operands = new List<IExpressionSyntax>();
+            Token op = ParseOperator(Parser);
+            operands.Add(FirstExpression);
+            int currentPrecedence = GetPrecedence(op.Type);
+            //var nextOpTokenPeek = PeekNoWhitespaceToken(Parser);
+            var nextOpTokenPeek = op;
+            do
+            {
+                if (nextOpTokenPeek.Type == op.Type)
+                {
+                    if (operands.Count > 1)
+                    {
+                        ParseOperator(Parser);
+                    }
+                    else
+                    {
+                        operands.Add(ParseSingleExpression(Parser));
+                    }
+                }
+                else
+                {
+                    int nextPrecedence = GetPrecedence(nextOpTokenPeek.Type);
+                    if (nextPrecedence < currentPrecedence)
+                    {
+                        var lastOperand = operands[operands.Count - 1];
+                        operands.RemoveAt(operands.Count - 1);
+                        var newExpr = ParseBinaryExpression(lastOperand, Parser, nextPrecedence);
+                        operands.Add(newExpr);
+                    }
+                    else if (nextPrecedence > MaxPrecedence)
+                    {
+                        return CreateBinaryExpression(operands, op); // We're done here
+                    }
+                    else
+                    {
+                        var currentExpr = CreateBinaryExpression(operands, op);
+                        return ParseBinaryExpression(currentExpr, Parser, MaxPrecedence);
+                    }
+                }
+                nextOpTokenPeek = PeekOperator(Parser);
+            } while (nextOpTokenPeek.Type.IsBinaryExpressionToken())
+
+            return CreateBinaryExpression(operands, op);
+        }
+
+        #endregion
+
+        #region ParseInvocationExpression
+
+        protected virtual IExpressionSyntax ParseInvocationExpression(IExpressionSyntax Caller, ITokenStream Parser)
+        {
+            var exprs = ParseArgumentList(Parser);
+
+            return new InvocationSyntax(Caller, exprs);
+        }
+
+        protected virtual SeparatedList<IExpressionSyntax> ParseArgumentListContents(ITokenStream Parser, TokenType RightDelimiter)
+        {
+            var exprs = new List<SeparatedItem<IExpressionSyntax>>();
+
+            var separator = Token.Undefined;
+            var peek = Parser.PeekNoTrivia();
+            while (peek.Type != RightDelimiter)
+            {
+                exprs.Add(new SeparatedItem<IExpressionSyntax>(separator, ParseExpression(Parser)));
+                peek = Parser.PeekNoTrivia();
+                if (peek.Type == TokenType.Comma)
+                {
+                    separator = Parser.NextNoTrivia();
+                }
+                else
+                {
+                    //peek.TokenPeek.EnsureType(RightDelimiter, Log);
+                    break;
+                }
+            }
+
+            return new SeparatedList<IExpressionSyntax>(exprs);
+        }
+
+        protected virtual DelimitedList<IExpressionSyntax> ParseArgumentList(ITokenStream Parser, TokenType LeftDelimiter, TokenType RightDelimiter)
+        {
+            var rParen = Parser.NextNoTrivia(LeftDelimiter, Log);
+
+            var exprs = ParseArgumentListContents(Parser, RightDelimiter);
+
+            var lParen = Parser.NextNoTrivia(RightDelimiter, Log);
+
+            return new DelimitedList<IExpressionSyntax>(rParen, exprs, lParen);
+        }
+
+        protected virtual DelimitedList<IExpressionSyntax> ParseArgumentList(ITokenStream Parser)
+        {
+            return ParseArgumentList(Parser, TokenType.RParen, TokenType.LParen);
+        }
+
+        #endregion
+
+        #region GetValue
+
+        protected virtual IExpressionSyntax ParseValueExpression(Token Token)
+        {
+            if (Token.Type == TokenType.String)
+            {
+                return new StringSyntax(Token);
+            }
+            else if (Token.Type == TokenType.Char)
+            {
+                return new CharSyntax(Token);
+            }
+            else if (Token.Type == TokenType.Float32)
+            {
+                return new Float32Syntax(Token);
+            }
+            else if (Token.Type == TokenType.Float64)
+            {
+                return new Float64Syntax(Token);
+            }
+            /*else if (Token.Type == TokenType.HexInteger)
+            {
+                return new HexIntegerSyntax(Token);
+            }
+            else if (Token.Type == TokenType.BinaryInteger)
+            {
+                return new BinaryIntegerSyntax(Token);
+            }*/
+            else if (Token.Type == TokenType.Identifier)
+            {
+                return new IdentifierSyntax(Token);
+            }
+            else if (Token.Type == TokenType.Integer)
+            {
+                return new IntegerSyntax(Token);
+            }
+            else if (Token.Type == TokenType.TrueLiteral || Token.Type == TokenType.FalseLiteral)
+            {
+                return new BooleanSyntax(Token);
+            }
+            else
+            {
+                Log.LogError(new LogEntry("Parser error", "Token '" + Token.ToString() + "' was mistakenly identified as a value token or could not be parsed.", Token.Location));
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region ParsePrefixedExpression
+
+        protected virtual IExpressionSyntax ParsePrefixedExpression(Token Token, ITokenStream Parser)
+        {
+            if (Token.Type == TokenType.And)
+            {
+                var variable = GetVariable(Parser);
+                return new AddressOfSyntax(Token, variable);
+            }
+            else
+            {
+                IExpressionSyntax InnerExpression = ParseSingleExpression(Parser);
+                if (Token.Type == TokenType.Plus)
+                {
+                    return InnerExpression;
+                }
+                else if (Token.Type == TokenType.PlusPlus || Token.Type == TokenType.MinusMinus)
+                {
+                    return new PrefixDeltaSyntax(Token, (IVariableSyntax)InnerExpression);
+                }
+                else if (Token.Type == TokenType.Minus)
+                {
+                    return new NegateSyntax(Token, InnerExpression);
+                }
+                else if (Token.Type == TokenType.Tilde || Token.Type == TokenType.Not)
+                {
+                    return new NotSyntax(Token, InnerExpression);
+                }
+                else if (Token.Type == TokenType.Asterisk)
+                {
+                    return new AtAddressSyntax(Token, InnerExpression);
+                }
+                else
+                {
+                    Log.LogError(new LogEntry("Parser error", "Token '" + Token.ToString() + "' was mistakenly identified as an expression prefix or could not be parsed.", Token.Location));
+                    return null;
+                }
+            }
+        }
+
+        #endregion
+
+        #region ParseIdentifierExpression
+
+        protected virtual IExpressionSyntax ParseIdentifierExpression(Token Identifier, ITokenStream Parser)
+        {
+            return ParseIdentifierExpression(new IdentifierSyntax(Identifier), Parser);
+        }
+
+        protected virtual IExpressionSyntax ParseIdentifierExpression(IExpressionSyntax Expression, ITokenStream Parser)
+        {
+            var peek = Parser.PeekNoTrivia();
+            if (peek.Type == TokenType.Dot || peek.Type == TokenType.RArrow)
+            {
+                var dot = Parser.NextNoTrivia();
+                var secondIdent = Parser.NextNoTrivia(TokenType.Identifier, Log);
+                IExpressionSyntax accessExpr;
+                if (peek.Type == TokenType.RArrow)
+                {
+                    accessExpr = new AtAddressMemberAccessSyntax(Expression, dot, secondIdent);
+                }
+                else
+                {
+                    accessExpr = new MemberAccessSyntax(Expression, dot, secondIdent);
+                }
+                return ParseIdentifierExpression(accessExpr, Parser);
+            }
+            else if (peek.Type == TokenType.RParen)
+            {
+                var invocation = ParseInvocationExpression(Expression, Parser);
+                return ParseIdentifierExpression(invocation, Parser);
+            }
+            else if (peek.Type == TokenType.RBrackets)
+            {
+                var indexerExpr = ParseIndexedElementVariable(Expression, Parser);
+                return ParseIdentifierExpression(indexerExpr, Parser);
+            }
+            else if (peek.Type.IsPostfixUnaryToken())
+            {
+                var postFixExpr = new PostfixDeltaSyntax((IVariableSyntax)Expression, Parser.NextNoTrivia(peek.Type, Log));
+                return ParseIdentifierExpression(postFixExpr, Parser);
+            }
+            else
+            {
+                return Expression;
+            }
+        }
+
+        #endregion
+
+        #endregion
+
+        #region Variable Parsing
+
+        #region GetVariable
+
+        protected virtual IVariableSyntax GetVariable(ITokenStream Parser)
+        {
+            IExpressionSyntax parsedExpr = ParseExpression(Parser);
+            return (IVariableSyntax)parsedExpr;
+        }
+
+        #endregion
+
+        #region ParseIndexedElementVariable
+
+        protected virtual IVariableSyntax ParseIndexedElementVariable(IExpressionSyntax Caller, ITokenStream Parser)
+        {
+            var exprs = ParseArgumentList(Parser, TokenType.RBrackets, TokenType.LBrackets);
+
+            return new IndexedElementSyntax(Caller, exprs);
+        }
+
+        #endregion
+
+        #endregion
+
+        #region Statement Parsing
+
+        public virtual IStatementSyntax ParseStatement(ITokenStream Tokens)
+        {
+            var syntax = ParseStatementInternal(Tokens);
+            if (syntax == null)
+            {
+                return new EmptySyntax();
+            }
+            else
+            {
+                return syntax;
+            }
+        }
+
+        #region ParseStatementInternal
+
+        protected virtual IStatementSyntax ParseStatementInternal(ITokenStream Tokens)
+        {
+            var peek = Tokens.PeekNoTrivia();
+            var tokenType = peek.TokenPeek.Type;
+            if (tokenType == TokenType.EndOfFile)
+                return null;
+            else if (tokenType == TokenType.Semicolon)
+                return new EmptySyntax(Tokens.NextNoTrivia());
+            else if (tokenType == TokenType.ReturnKeyword)
+                return ParseReturnStatement(Tokens);
+            else if (tokenType == TokenType.BreakKeyword)
+                return ParseBreakStatement(Tokens);
+            else if (tokenType == TokenType.ContinueKeyword)
+                return ParseContinueStatement(Tokens);
+            else if (tokenType == TokenType.RBraces)
+                return ParseBlockStatement(Tokens);
+            else if (tokenType == TokenType.IfKeyword)
+                return ParseIfElseStatement(Tokens);
+            else if (tokenType == TokenType.WhileKeyword)
+                return ParseWhileStatement(Tokens);
+            else if (tokenType == TokenType.DoKeyword)
+                return ParseDoWhileStatement(Tokens);
+            else if (tokenType == TokenType.ForKeyword)
+                return ParseForStatement(Tokens);
+            else
+                return ParseExpressionStatement(Tokens);
+        }
+
+        #endregion
+
+        #region ParseExpressionStatement
+
+        protected virtual IStatementSyntax ParseExpressionStatement(ITokenStream Tokens)
+        {
+            var pos = Tokens.CurrentPosition;
+            var decl = ParseDeclaration(Tokens, true, false);
+            if (decl != null)
+            {
+                return ParseDeclarationStatement(decl, Tokens);
+            }
+            else
+            {
+                Tokens.Seek(pos);
+                var expr = ParseExpression(Tokens);
+                Token semicolon = Token.Undefined;
+                if (Tokens.PeekNoTrivia().Type == TokenType.Semicolon)
+                {
+                    semicolon = Tokens.NextNoTrivia(TokenType.Semicolon, Log);
+                }
+                if (expr is ISetVariableExpressionSyntax)
+                {
+                    return new SetVariableStatementSyntax((ISetVariableExpressionSyntax)expr, semicolon);
+                }
+                else
+                {
+                    return new ExpressionStatementSyntax(expr, semicolon);
+                }
+            }
+        }
+
+        #endregion
+
+        #region ParseDeclarationStatement
+
+        protected virtual VariableDeclarationSyntax ParseDeclarationStatement(DeclarationSyntax Declaration, ITokenStream Tokens)
+        {
+            var elemType = Declaration.ElementType;
+            var declList = new List<SeparatedItem<SingleVariableDeclaration>>();
+            if (!string.IsNullOrWhiteSpace(Declaration.Declarator.Name))
+            {
+                if (Tokens.PeekNoTrivia().Type == TokenType.Equals)
+                {
+                    var opAssign = Tokens.NextNoTrivia(TokenType.Equals, Log);
+                    var val = ParseExpression(Tokens);
+                    var firstDecl = new SingleVariableDeclaration(Declaration.Declarator, opAssign, val);
+                    declList.Add(new SeparatedItem<SingleVariableDeclaration>(firstDecl));
+                }
+                else
+                {
+                    var firstDecl = new SingleVariableDeclaration(Declaration.Declarator);
+                    declList.Add(new SeparatedItem<SingleVariableDeclaration>(firstDecl));
+                }
+            }
+
+            while (Tokens.PeekNoTrivia().Type == TokenType.Comma)
+            {
+                var separator = Tokens.NextNoTrivia(TokenType.Comma, Log);
+                var declarator = ParseDeclarator(Tokens, true);
+                if (Tokens.PeekNoTrivia().Type == TokenType.Equals)
+                {
+                    var opAssign = Tokens.NextNoTrivia(TokenType.Equals, Log);
+                    var val = ParseExpression(Tokens);
+                    var decl = new SingleVariableDeclaration(declarator, opAssign, val);
+                    declList.Add(new SeparatedItem<SingleVariableDeclaration>(separator, decl));
+                }
+                else
+                {
+                    var decl = new SingleVariableDeclaration(declarator);
+                    declList.Add(new SeparatedItem<SingleVariableDeclaration>(separator, decl));
+                }
+            }
+
+            var semicolon = Tokens.NextNoTrivia(TokenType.Semicolon, Log);
+
+            return new VariableDeclarationSyntax(elemType,
+                new SeparatedList<SingleVariableDeclaration>(declList),
+                semicolon);
+        }
+
+        protected virtual VariableDeclarationSyntax ParseDeclarationStatement(ITokenStream Tokens)
+        {
+            var decl = ParseDeclaration(Tokens, true);
+            return ParseDeclarationStatement(decl, Tokens);
+        }
+
+        #endregion
+
+        #region ParseReturnSyntax
+
+        protected virtual IStatementSyntax ParseReturnStatement(ITokenStream Tokens)
+        {
+            var keyword = Tokens.NextNoTrivia(TokenType.ReturnKeyword, Log);
+            var peek = Tokens.PeekNoTrivia();
+            if (peek.TokenPeek.Type == TokenType.Semicolon)
+            {
+                return new ReturnSyntax(keyword, Tokens.NextNoTrivia(TokenType.Semicolon, Log));
+            }
+            else
+            {
+                var expr = ParseExpression(Tokens);
+                var semicolon = Tokens.NextNoTrivia(TokenType.Semicolon, Log);
+                return new ReturnSyntax(keyword, expr, semicolon);
+            }
+        }
+
+        #endregion
+
+        #region ParseBreakSyntax
+
+        protected virtual BreakSyntax ParseBreakStatement(ITokenStream Tokens)
+        {
+            var keyword = Tokens.NextNoTrivia(TokenType.BreakKeyword, Log);
+            var semicolon = Tokens.NextNoTrivia(TokenType.Semicolon, Log);
+            return new BreakSyntax(keyword, semicolon);
+        }
+
+        #endregion
+
+        #region ParseContinueSyntax
+
+        protected virtual IStatementSyntax ParseContinueStatement(ITokenStream Tokens)
+        {
+            var keyword = Tokens.NextNoTrivia(TokenType.ContinueKeyword, Log);
+            var semicolon = Tokens.NextNoTrivia(TokenType.Semicolon, Log);
+            return new ContinueSyntax(keyword, semicolon);
+        }
+
+        #endregion
+
+        #region ParseBlockStatement
+
+        protected virtual IStatementSyntax ParseBlockStatement(ITokenStream Tokens)
+        {
+            var leadingBraces = Tokens.NextNoTrivia(TokenType.RBraces, Log);
+            List<IStatementSyntax> statements = new List<IStatementSyntax>();
+            var peek = Tokens.PeekNoTrivia();
+            while (peek.Type != TokenType.LBraces && peek.Type != TokenType.EndOfFile && peek.Type != TokenType.UNDEFINED)
+            {
+                statements.Add(ParseStatementInternal(Tokens));
+                peek = Tokens.PeekNoTrivia();
+            }
+            var trailingBraces = Tokens.NextNoTrivia(TokenType.LBraces, Log);
+            return new BlockSyntax(leadingBraces, statements, trailingBraces);
+        }
+
+        #endregion
+
+        #region ParseIfElseSyntax
+
+        protected virtual IStatementSyntax ParseIfElseStatement(ITokenStream Tokens)
+        {
+            var ifKeyword = Tokens.NextNoTrivia(TokenType.IfKeyword, Log);
+            var leadingParen = Tokens.NextNoTrivia(TokenType.RParen, Log);
+            var expr = ParseExpression(Tokens);
+            var trailingParen = Tokens.NextNoTrivia(TokenType.LParen, Log);
+            var ifBody = ParseStatement(Tokens);
+            if (Tokens.PeekNoTrivia().Type == TokenType.ElseKeyword)
+            {
+                var elseKeyword = Tokens.NextNoTrivia();
+                var elseBody = ParseStatement(Tokens);
+                return new IfElseSyntax(ifKeyword, leadingParen, expr, trailingParen, ifBody, elseKeyword, elseBody);
+            }
+            else
+            {
+                return new IfElseSyntax(ifKeyword, leadingParen, expr, trailingParen, ifBody);
+            }
+        }
+
+        #endregion
+
+        #region ParseWhileSyntax
+
+        protected virtual IStatementSyntax ParseWhileStatement(ITokenStream Tokens)
+        {
+            var whileKeyword = Tokens.NextNoTrivia(TokenType.WhileKeyword, Log);
+            var leadingParen = Tokens.NextNoTrivia(TokenType.RParen, Log);
+            var expr = ParseExpression(Tokens);
+            var trailingParen = Tokens.NextNoTrivia(TokenType.LParen, Log);
+            var body = ParseStatement(Tokens);
+            return new WhileSyntax(whileKeyword, leadingParen, expr, trailingParen, body);
+        }
+
+        #endregion
+
+        #region ParseWhileSyntax
+
+        protected virtual IStatementSyntax ParseDoWhileStatement(ITokenStream Tokens)
+        {
+            var doKeyword = Tokens.NextNoTrivia(TokenType.DoKeyword, Log);
+            var body = ParseStatement(Tokens);
+            var whileKeyword = Tokens.NextNoTrivia(TokenType.WhileKeyword, Log);
+            var leadingParen = Tokens.NextNoTrivia(TokenType.RParen, Log);
+            var expr = ParseExpression(Tokens);
+            var trailingParen = Tokens.NextNoTrivia(TokenType.LParen, Log);
+            var semicolon = Tokens.NextNoTrivia(TokenType.Semicolon, Log);
+            return new DoWhileSyntax(doKeyword, body,
+                whileKeyword, leadingParen, expr, trailingParen, semicolon);
+        }
+
+        #endregion
+
+        #region ParseForSyntax
+
+        protected virtual IStatementSyntax ParseForStatement(ITokenStream Tokens)
+        {
+            var forKeyword = Tokens.NextNoTrivia(TokenType.ForKeyword, Log);
+            var leadingParen = Tokens.NextNoTrivia(TokenType.RParen, Log);
+            var initStatement = ParseStatement(Tokens);
+            var expr = ParseExpression(Tokens);
+            var condSemicolon = Tokens.NextNoTrivia(TokenType.Semicolon, Log);
+            var deltaStatement = ParseStatement(Tokens);
+            var trailingParen = Tokens.NextNoTrivia(TokenType.LParen, Log);
+            var body = ParseStatement(Tokens);
+            return new ForSyntax(forKeyword, leadingParen,
+                initStatement, expr, condSemicolon, deltaStatement,
+                trailingParen, body);
+        }
+
+        #endregion
+
+        #region ParseFunctionDefinition
+
+        protected virtual FunctionDefinitionSyntax ParseFunctionDefinition(DeclarationSyntax Declaration, ITokenStream Tokens)
+        {
+            var body = ParseStatement(Tokens);
+            return new FunctionDefinitionSyntax(Declaration, body);
+        }
+
+        public virtual FunctionDefinitionSyntax ParseFunctionDefinition(ITokenStream Tokens)
+        {
+            var decl = ParseDeclaration(Tokens, true);
+            return ParseFunctionDefinition(decl, Tokens);
+        }
+
+        #endregion
+
+        #region ParseFieldDefinition
+
+        protected virtual FieldDefinitionSyntax ParseFieldDefinition(DeclarationSyntax Declaration, ITokenStream Tokens)
+        {
+            var variableDecl = ParseDeclarationStatement(Declaration, Tokens);
+            return new FieldDefinitionSyntax(variableDecl);
+        }
+
+        public virtual FieldDefinitionSyntax ParseFieldDefinition(ITokenStream Tokens)
+        {
+            return new FieldDefinitionSyntax(ParseDeclarationStatement(Tokens));
+        }
+
+        #endregion
+
+        public virtual IDeclarationSyntax ParseDeclaration(ITokenStream Tokens)
+        {
+            var decl = ParseDeclaration(Tokens, false);
+            if (!string.IsNullOrWhiteSpace(decl.Name) && Tokens.PeekNoTrivia().Type == TokenType.RBraces)
+            {
+                return ParseFunctionDefinition(decl, Tokens);
+            }
+            else
+            {
+                return ParseFieldDefinition(decl, Tokens);
+            }
+        }
+
+        public virtual [IDeclarationSyntax] ParseAllDeclarations(ITokenStream Tokens)
+        {
+            var results = new List<IDeclarationSyntax>();
+            var peek = Tokens.PeekNoTrivia();
+            while (peek.Type != TokenType.EndOfFile && peek.Type != TokenType.UNDEFINED)
+            {
+                results.Add(ParseDeclaration(Tokens));
+                peek = Tokens.PeekNoTrivia();
+            }
+            return results;
+        }
+    }
+}

@@ -1,0 +1,71 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Flame.Compiler;
+using Flame.C.Build;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+	public class StructDefinitionSyntax : ITypeSyntax, ISourceSyntax
+	{
+		public const this(set StructDeclarationSyntax Declaration,
+            set Token LeadingBraces, set [VariableDeclarationSyntax] Fields,
+            set Token TrailingBraces);
+
+		public StructDeclarationSyntax Declaration { const get; private set; }
+        public Token LeadingBraces { const get; private set; }
+        public [VariableDeclarationSyntax] Fields { const get; private set; }
+        public Token TrailingBraces { const get; private set; }
+
+		public SourceLocation Location
+		{
+            const get
+            {
+                var result = Declaration.Location.Concat(LeadingBraces.Location);
+
+                foreach (var item in Fields)
+                {
+                    result = result.Concat(item.GetSourceLocation());
+                }
+                return result.Concat(TrailingBraces.Location);
+            }
+		}
+
+        public string TypeName
+        {
+        	const get return Declaration.TypeName;
+        }
+
+        public IType CreateType(ISyntaxState State)
+        {
+            var cState = (ICSyntaxState)State;
+        	var structType = new SyntaxStruct(this, cState);
+            return cState.Declare(structType);
+        }
+
+        public override string ToString()
+        {
+            return GetCode().ToString();
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            CodeBuilder cb = new CodeBuilder();
+            cb.Append(Declaration.GetCode());
+            cb.Append(LeadingBraces.ToString());
+            foreach (var item in Fields)
+            {
+                cb.Append(item.GetCode());
+            }
+            cb.Append(TrailingBraces.ToString());
+            return cb;
+        }
+
+        public bool IsVariable
+        {
+            const get return false;
+        }
+	}
+}

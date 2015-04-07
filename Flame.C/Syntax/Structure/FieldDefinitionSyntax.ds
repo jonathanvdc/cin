@@ -1,0 +1,57 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Flame.Compiler;
+using Flame.C.Build;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class FieldDefinitionSyntax : IDeclarationSyntax, ISourceSyntax
+    {
+        public const this(set VariableDeclarationSyntax Declaration);
+
+        public VariableDeclarationSyntax Declaration { const get; private set; }
+
+        public SourceLocation Location
+        {
+            const get
+            {
+                return Declaration.Location;
+            }
+        }
+
+        public bool IsExtensionMember
+        {
+            const get return false;
+        }
+
+        public bool IsSingletonMember
+        {
+            const get return false;
+        }
+
+        public void Declare(ICSyntaxState State)
+        {
+            var type = Declaration.Type.CreateVerifiedType(State);
+            foreach (var fieldDecl in Declaration.Declarations)
+            {
+                var field = new SyntaxField(type, fieldDecl.Declarator,
+                                            State, true);
+
+                if (fieldDecl.Value != null)
+                {
+                    field.MakeDefinition(fieldDecl.Value.CreateVerifiedExpression(State));
+                }
+
+                State.Declare(field);
+            }
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            return Declaration.GetCode();
+        }
+    }
+}

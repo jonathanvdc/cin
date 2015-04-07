@@ -1,0 +1,40 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Flame.Compiler;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class IdentifierDeclaratorSyntax : IDeclaratorSyntax, ISourceSyntax
+    {
+        public const this(set Token Identifier);
+
+        public Token Identifier { const get; private set; }
+
+        public string Name { const get return Identifier.TokenValue; }
+
+        public SourceLocation Location
+        {
+            const get return Identifier.Location;
+        }
+
+        public IType CreateType(IType Type, ICSyntaxState State)
+        {
+            return Type;
+        }
+
+        public override const string ToString()
+        {
+            return this.GetCode().ToString();
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            var cb = new CodeBuilder();
+            cb.Append(Identifier.ToString());
+            return cb;
+        }
+    }
+}

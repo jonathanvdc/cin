@@ -1,0 +1,111 @@
+<?xml version="1.0"?>
+<Project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Name="Flame.C">
+  <Setter Property="TargetPlatform" Value="CLR" />
+  <Setter Property="AssemblyName" Value="Flame.C" />
+  <Option Key="platform" Value="CLR" />
+  <ItemGroup>
+    <RuntimeLibrary Include="PortableRT" />
+    <RuntimeLibrary Include="System" />
+    <RuntimeLibrary Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+      <Reference Include="../libs/Pixie.dll" />
+      <Reference Include="../libs/Flame.dll" />
+      <Reference Include="../libs/Flame.Compiler.dll" />
+      <Reference Include="../libs/Flame.Syntax.dll" />
+  </ItemGroup>
+  <ItemGroup Name="Build">
+      <Compile Include="Build/CBuildHelpers.ds" />
+      <Compile Include="Build/CompilationUnit.ds" />
+      <Compile Include="Build/CompilationUnitBinder.ds" />
+      <Compile Include="Build/SyntaxAssembly.ds" />
+      <Compile Include="Build/SyntaxField.ds" />
+      <Compile Include="Build/SyntaxFunction.ds" />
+      <Compile Include="Build/SyntaxStruct.ds" />
+  </ItemGroup>
+  <ItemGroup Name="Lexer">
+      <Compile Include="Lexer/Token.ds" />
+      <Compile Include="Lexer/TokenType.ds" />
+      <Compile Include="Lexer/TokenIdentifier.ds" />
+      <Compile Include="Lexer/ITokenStream.ds" />
+      <Compile Include="Lexer/TokenizerStream.ds" />
+      <Compile Include="Lexer/TokenExamples.ds" />
+      <Compile Include="Lexer/TokenExtensions.ds" />
+  </ItemGroup>
+  <ItemGroup Name="Parser">
+      <Compile Include="Parser/CSyntaxParser.ds" />
+  </ItemGroup>
+  <ItemGroup Name="Syntax">
+    <ItemGroup Name="Expressions">
+        <Compile Include="Syntax/Expressions/AddressOfSyntax.ds" />
+        <Compile Include="Syntax/Expressions/AtAddressMemberAccessSyntax.ds" />
+        <Compile Include="Syntax/Expressions/AtAddressSyntax.ds" />
+        <Compile Include="Syntax/Expressions/AssignmentSyntax.ds" />
+        <Compile Include="Syntax/Expressions/BinarySyntax.ds" />
+        <Compile Include="Syntax/Expressions/BooleanSyntax.ds" />
+        <Compile Include="Syntax/Expressions/CharSyntax.ds" />
+        <Compile Include="Syntax/Expressions/CastSyntax.ds" />
+        <Compile Include="Syntax/Expressions/FloatSyntax.ds" />
+        <Compile Include="Syntax/Expressions/IndexedElementSyntax.ds" />
+        <Compile Include="Syntax/Expressions/IntegerSyntax.ds" />
+        <Compile Include="Syntax/Expressions/InvocationSyntax.ds" />
+        <Compile Include="Syntax/Expressions/IdentifierSyntax.ds" />
+        <Compile Include="Syntax/Expressions/LiteralSyntax.ds" />
+        <Compile Include="Syntax/Expressions/MemberAccessSyntax.ds" />
+        <Compile Include="Syntax/Expressions/MemberAccessSyntaxBase.ds" />
+        <Compile Include="Syntax/Expressions/NotSyntax.ds" />
+        <Compile Include="Syntax/Expressions/NegateSyntax.ds" />
+        <Compile Include="Syntax/Expressions/ParenthesesSyntax.ds" />
+        <Compile Include="Syntax/Expressions/PostfixDeltaSyntax.ds" />
+        <Compile Include="Syntax/Expressions/PrefixDeltaSyntax.ds" />
+        <Compile Include="Syntax/Expressions/StringSyntax.ds" />
+        <Compile Include="Syntax/Expressions/UnaryExpressionSyntax.ds" />
+        <Compile Include="Syntax/Expressions/VariableSyntaxBase.ds" />
+    </ItemGroup>
+    <ItemGroup Name="Statements">
+        <Compile Include="Syntax/Statements/BlockSyntax.ds" />
+        <Compile Include="Syntax/Statements/BreakSyntax.ds" />
+        <Compile Include="Syntax/Statements/ContinueSyntax.ds" />
+        <Compile Include="Syntax/Statements/DoWhileSyntax.ds" />
+        <Compile Include="Syntax/Statements/EmptySyntax.ds" />
+        <Compile Include="Syntax/Statements/ExpressionStatementSyntax.ds" />
+        <Compile Include="Syntax/Statements/ForSyntax.ds" />
+        <Compile Include="Syntax/Statements/IfElseSyntax.ds" />
+        <Compile Include="Syntax/Statements/LineStatementSyntax.ds" />
+        <Compile Include="Syntax/Statements/ReturnSyntax.ds" />
+        <Compile Include="Syntax/Statements/SetVariableStatementSyntax.ds" />
+        <Compile Include="Syntax/Statements/VariableDeclarationSyntax.ds" />
+        <Compile Include="Syntax/Statements/WhileSyntax.ds" />
+    </ItemGroup>
+    <ItemGroup Name="Structure">
+        <Compile Include="Syntax/Structure/FieldDefinitionSyntax.ds" />
+        <Compile Include="Syntax/Structure/FunctionDefinitionSyntax.ds" />
+    </ItemGroup>
+    <ItemGroup Name="Types">
+        <Compile Include="Syntax/Types/ArrayDeclaratorSyntax.ds" />
+        <Compile Include="Syntax/Types/EmptyDeclaratorSyntax.ds" />
+        <Compile Include="Syntax/Types/FunctionDeclaratorSyntax.ds" />
+        <Compile Include="Syntax/Types/DeclarationSyntax.ds" />
+        <Compile Include="Syntax/Types/IDeclaratorSyntax.ds" />
+        <Compile Include="Syntax/Types/IdentifierDeclaratorSyntax.ds" />
+        <Compile Include="Syntax/Types/IdentifierTypeSyntax.ds" />
+        <Compile Include="Syntax/Types/InferredTypeSyntax.ds" />
+        <Compile Include="Syntax/Types/ParenthesesDeclaratorSyntax.ds" />
+        <Compile Include="Syntax/Types/PointerDeclaratorSyntax.ds" />
+        <Compile Include="Syntax/Types/StructDeclarationSyntax.ds" />
+        <Compile Include="Syntax/Types/StructDefinitionSyntax.ds" />
+        <Compile Include="Syntax/Types/TaggedTypeSyntax.ds" />
+    </ItemGroup>
+    <Compile Include="Syntax/DelimitedList.ds" />
+    <Compile Include="Syntax/ICSyntaxState.ds" />
+    <Compile Include="Syntax/IDeclarationSyntax.ds" />
+    <Compile Include="Syntax/SeparatedItem.ds" />
+    <Compile Include="Syntax/SeparatedList.ds" />
+    <Compile Include="Syntax/SingleVariableDeclaration.ds" />
+    <Compile Include="Syntax/SyntaxState.ds" />
+  </ItemGroup>
+  <ItemGroup Name="Variables">
+      <Compile Include="Variables/AssignedVariable.ds" />
+      <Compile Include="Variables/AsymmetricVariable.ds" />
+  </ItemGroup>
+</Project>

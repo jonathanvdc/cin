@@ -1,0 +1,43 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Flame.Compiler;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+	public class InferredTypeSyntax : ITypeSyntax, ISourceSyntax
+	{
+		public const this(set Token AutoKeyword);
+
+		public Token AutoKeyword { const get; private set; }
+
+		public SourceLocation Location
+		{
+			const get return AutoKeyword.Location;
+		}
+
+        public IType CreateType(ISyntaxState State)
+        {
+        	return null;
+        }
+
+        public override string ToString()
+        {
+            return GetCode().ToString();
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            CodeBuilder cb = new CodeBuilder();
+            cb.Append(AutoKeyword.ToString());
+            return cb;
+        }
+
+        public bool IsVariable
+        {
+            const get return true;
+        }
+	}
+}

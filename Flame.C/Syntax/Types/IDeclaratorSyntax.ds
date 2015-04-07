@@ -1,0 +1,15 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Flame.Compiler;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public interface IDeclaratorSyntax : ISyntaxNode
+    {
+        string Name { const get; }
+        IType CreateType(IType Type, ICSyntaxState State);
+    }
+}

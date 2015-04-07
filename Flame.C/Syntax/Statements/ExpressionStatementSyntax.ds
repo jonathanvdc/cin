@@ -1,0 +1,40 @@
+using System;
+using System.Collections.Generic;
+using Flame.Compiler;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Expressions;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class ExpressionStatementSyntax : LineStatementSyntax, ISourceSyntax
+    {
+        public const this(set IExpressionSyntax Expression);
+        public const this(set IExpressionSyntax Expression, set Token Semicolon);
+
+        public IExpressionSyntax Expression { const get; private set; }
+
+        public SourceLocation Location
+        {
+        	const get
+        	{
+        		return Expression.GetSourceLocation().Concat(Semicolon.Location);
+        	}
+        }
+
+        public override IStatement CreateStatement(ISyntaxState State)
+        {
+        	var expr = Expression.CreateVerifiedExpression(State);
+        	if (expr != null && expr.IsConstant)
+        	{
+        		State.Log.LogWarning(new LogEntry("Value discarded", "Expression statement '" + this.GetCode().ToString() + "' discards a constant value (of type '" + expr.Type.FullName + "').", Location));
+        	}
+            return new ExpressionStatement(expr);
+        }
+
+        protected override CodeBuilder GetStatementCode()
+        {
+            return Expression.GetCode();
+        }
+    }
+}

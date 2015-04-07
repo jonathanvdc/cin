@@ -1,0 +1,39 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Flame.Compiler;
+using Flame.Compiler.Expressions;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public abstract class LiteralSyntax : IExpressionSyntax, ISourceSyntax
+    {
+    	public const this();
+        public const this(set Token Value);
+
+        public Token Value { const get; protected set; }
+
+        protected abstract const IExpression CreateExpression(ISyntaxState State, Token Value);
+
+        public const IExpression CreateExpression(ISyntaxState State)
+        {
+            return CreateExpression(State, Value);
+        }
+
+        public SourceLocation Location
+        {
+        	const get return Value.Location;
+        }
+
+        public override const string ToString()
+        {
+            return Value.ToString();
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            return new CodeBuilder(Value.ToString());
+        }
+    }
+}

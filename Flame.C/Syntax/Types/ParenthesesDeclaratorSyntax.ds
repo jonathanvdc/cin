@@ -1,0 +1,47 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Flame.Compiler;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class ParenthesesDeclaratorSyntax : IDeclaratorSyntax, ISourceSyntax
+    {
+        public const this(set Token LeadingParentheses,
+            set IDeclaratorSyntax Declarator, set Token TrailingParentheses);
+
+        public Token LeadingParentheses { const get; private set; }
+        public IDeclaratorSyntax Declarator { const get; private set; }
+        public Token TrailingParentheses { const get; private set; }
+
+        public string Name { const get return Declarator.Name; }
+
+        public SourceLocation Location
+        {
+            const get return LeadingParentheses.Location
+                            .Concat(Declarator.GetSourceLocation())
+                            .Concat(TrailingParentheses.Location);
+        }
+
+        public IType CreateType(IType Type, ICSyntaxState State)
+        {
+            return Declarator.CreateType(Type, State);
+        }
+
+        public override const string ToString()
+        {
+            return this.GetCode().ToString();
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            var cb = new CodeBuilder();
+            cb.Append(LeadingParentheses.ToString());
+            cb.Append(Declarator.GetCode());
+            cb.Append(TrailingParentheses.ToString());
+            return cb;
+        }
+    }
+}

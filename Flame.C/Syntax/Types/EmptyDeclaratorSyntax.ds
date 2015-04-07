@@ -1,0 +1,31 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Flame.Compiler;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class EmptyDeclaratorSyntax : IDeclaratorSyntax
+    {
+        public const this();
+
+        public string Name { const get return null; }
+
+        public IType CreateType(IType Type, ICSyntaxState State)
+        {
+            return Type;
+        }
+
+        public override const string ToString()
+        {
+            return this.GetCode().ToString();
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            return new CodeBuilder();
+        }
+    }
+}
