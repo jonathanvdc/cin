@@ -4,14 +4,14 @@ struct A b;
 struct A
 {
     int x, y;
-    char *z;
+    void *z;
 };
 
 int Test(void)
 {
     b.x = 5;
     b.y = 6;
-    char local = 5;
-    b.z = (uint8_t*)&local;
+    unsigned char local = 5;
+    b.z = (void*)&local;
     return b.x;
 }

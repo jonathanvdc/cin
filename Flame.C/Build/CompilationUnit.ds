@@ -1,0 +1,94 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Flame.Build;
+using Flame.Syntax;
+using Flame.Syntax.C;
+
+namespace Flame.C.Build
+{
+    public class CompilationUnit : INamespace
+    {
+        public const this(set SyntaxAssembly Assembly)
+        {
+            methods = new Dictionary<string, SyntaxFunction>();
+            fields = new Dictionary<string, SyntaxField>();
+            structs = new Dictionary<string, SyntaxStruct>();
+        }
+
+        public SyntaxAssembly Assembly { const get; private set; }
+        public IAssembly DeclaringAssembly { const get return Assembly; }
+        public string Name { const get return Assembly.Name; }
+        public string FullName { const get return Name; }
+
+        public const [IAttribute] GetAttributes()
+        {
+            return Assembly.GetAttributes();
+        }
+
+        public ICSyntaxState GetSyntaxState()
+        {
+            var descMethod = new DescribedMethod();
+            descMethod.DeclaringType = Assembly.GlobalType;
+            return new SyntaxState(this, descMethod, new CompilationUnitBinder(this),
+                Assembly.Log, Assembly.TypeNamer);
+        }
+
+        private Dictionary<string, SyntaxFunction> methods;
+        private Dictionary<string, SyntaxField> fields;
+        private Dictionary<string, SyntaxStruct> structs;
+
+        public IMethod Declare(SyntaxFunction Method)
+        {
+            string name = Method.Name;
+            if (!methods.ContainsKey(name))
+            {
+                methods[name] = Method;
+                Assembly.DeclareGlobal(Method);
+            }
+            else if (Method.IsDefinition)
+            {
+                methods[name].MakeDefinition(Method);
+            }
+            return methods[name];
+        }
+
+        public IField Declare(SyntaxField Field)
+        {
+            string name = Field.Name;
+            if (!fields.ContainsKey(name))
+            {
+                fields[name] = Field;
+                Assembly.DeclareGlobal(Field);
+            }
+            else if (Field.IsDefinition)
+            {
+                fields[name].MakeDefinition(Field);
+            }
+            return fields[name];
+        }
+
+        public IType Declare(SyntaxStruct Type)
+        {
+            string name = Type.Name;
+            if (!structs.ContainsKey(name))
+            {
+                structs[name] = Type;
+            }
+            else if (Type.IsDefinition)
+            {
+                structs[name].MakeDefinition(Type);
+            }
+            return structs[name];
+        }
+
+        public [IField] Globals { const get return fields.Values; }
+        public [IMethod] Functions { const get return methods.Values; }
+        public [IType] Structs { const get return structs.Values; }
+
+        public const IType[] GetTypes()
+        {
+            return Enumerable.ToArray<IType>(structs.Values);
+        }
+    }
+}

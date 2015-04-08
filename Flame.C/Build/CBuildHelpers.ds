@@ -1,0 +1,102 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Binding;
+
+namespace Flame.C.Build
+{
+	public static class CBuildHelpers
+	{
+		public void MapCommonTypeNames(PredefinedBinder Binder)
+		{
+			Binder.MapType("void", PrimitiveTypes.Void);
+
+			Binder.MapType("_Bool", PrimitiveTypes.Boolean);
+            Binder.MapType("wchar_t", PrimitiveTypes.Char);
+		}
+
+        public void MapPlatformTypeNames(PredefinedBinder Binder,
+            IType CharType, IType SizeType, IType PtrdiffType)
+        {
+            Binder.MapType("char", CharType);
+            Binder.MapType("size_t", SizeType);
+            Binder.MapType("ptrdiff_t", PtrdiffType);
+        }
+
+		public void MapAliasTypeNames(PredefinedBinder Binder)
+		{
+			Binder.MapType("short", PrimitiveTypes.Int16);
+            Binder.MapType("short int", PrimitiveTypes.Int16);
+			Binder.MapType("int", PrimitiveTypes.Int32);
+			Binder.MapType("long", PrimitiveTypes.Int64);
+            Binder.MapType("long int", PrimitiveTypes.Int64);
+            Binder.MapType("long long", PrimitiveTypes.Int64);
+            Binder.MapType("long long int", PrimitiveTypes.Int64);
+
+            Binder.MapType("signed char", PrimitiveTypes.Int8);
+            Binder.MapType("signed short", PrimitiveTypes.Int16);
+            Binder.MapType("signed short int", PrimitiveTypes.Int16);
+			Binder.MapType("signed", PrimitiveTypes.Int32);
+            Binder.MapType("signed int", PrimitiveTypes.Int32);
+            Binder.MapType("signed long", PrimitiveTypes.Int64);
+            Binder.MapType("signed long int", PrimitiveTypes.Int64);
+            Binder.MapType("signed long long", PrimitiveTypes.Int64);
+            Binder.MapType("signed long long int", PrimitiveTypes.Int64);
+
+            Binder.MapType("unsigned char", PrimitiveTypes.UInt8);
+            Binder.MapType("unsigned short", PrimitiveTypes.UInt16);
+            Binder.MapType("unsigned short int", PrimitiveTypes.UInt16);
+			Binder.MapType("unsigned", PrimitiveTypes.UInt32);
+            Binder.MapType("unsigned int", PrimitiveTypes.UInt32);
+            Binder.MapType("unsigned long", PrimitiveTypes.UInt64);
+            Binder.MapType("unsigned long int", PrimitiveTypes.UInt64);
+            Binder.MapType("unsigned long long", PrimitiveTypes.UInt64);
+            Binder.MapType("unsigned long long int", PrimitiveTypes.UInt64);
+
+			Binder.MapType("float", PrimitiveTypes.Float32);
+			Binder.MapType("double", PrimitiveTypes.Float64);
+            Binder.MapType("long double", PrimitiveTypes.Float64);
+		}
+
+		public void MapStrictTypeNames(PredefinedBinder Binder)
+		{
+			Binder.MapType("int8_t",  PrimitiveTypes.Int8);
+			Binder.MapType("int16_t", PrimitiveTypes.Int16);
+			Binder.MapType("int32_t", PrimitiveTypes.Int32);
+			Binder.MapType("int64_t", PrimitiveTypes.Int64);
+
+			Binder.MapType("uint8_t",  PrimitiveTypes.UInt8);
+			Binder.MapType("uint16_t", PrimitiveTypes.UInt16);
+			Binder.MapType("uint32_t", PrimitiveTypes.UInt32);
+			Binder.MapType("uint64_t", PrimitiveTypes.UInt64);
+
+			Binder.MapType("float32_t", PrimitiveTypes.Float32);
+			Binder.MapType("float64_t", PrimitiveTypes.Float64);
+		}
+
+		public const IBinder CreatePrimitiveBinder(IBinder MainBinder,
+            IType CharType, IType SizeType, IType PtrdiffType)
+		{
+			var binder = new PredefinedBinder(MainBinder);
+
+            MapCommonTypeNames(binder);
+            MapStrictTypeNames(binder);
+			MapAliasTypeNames(binder);
+            MapPlatformTypeNames(binder, CharType, SizeType, PtrdiffType);
+
+			return binder;
+		}
+
+        public const IBinder CreatePrimitiveBinder32(IBinder MainBinder)
+        {
+            return CreatePrimitiveBinder(MainBinder,
+                PrimitiveTypes.UInt8, PrimitiveTypes.UInt32, PrimitiveTypes.Int32);
+        }
+
+        public const IBinder CreatePrimitiveBinder64(IBinder MainBinder)
+        {
+            return CreatePrimitiveBinder(MainBinder,
+                PrimitiveTypes.UInt8, PrimitiveTypes.UInt64, PrimitiveTypes.Int64);
+        }
+	}
+}

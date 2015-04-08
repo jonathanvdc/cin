@@ -1,0 +1,171 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Flame.Build;
+using Flame.Compiler;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Expressions;
+using Flame.C.Lexer;
+using Flame.Syntax;
+using Flame.Syntax.C;
+
+namespace Flame.C.Build
+{
+    public class SyntaxFunction : IBodyMethod
+    {
+        public const this(set IType ElementType,
+            set FunctionDeclaratorSyntax DeclaratorSyntax,
+            set ICSyntaxState DeclaringState);
+
+        public const this(set IType ElementType,
+            set FunctionDeclaratorSyntax DeclaratorSyntax,
+            set IStatementSyntax BodySyntax, set ICSyntaxState DeclaringState);
+
+        public IType ElementType { const get; private set; }
+        public FunctionDeclaratorSyntax DeclaratorSyntax { const get; private set; }
+        public ICSyntaxState DeclaringState { const get; private set; }
+        public IStatementSyntax BodySyntax { const get; private set; }
+
+        public bool IsDefinition
+        {
+            const get return BodySyntax != null;
+        }
+
+        public void MakeDefinition(SyntaxFunction Other)
+        {
+            MakeDefinition(Other.BodySyntax);
+        }
+
+        public void MakeDefinition(IStatementSyntax Body)
+        {
+            this.BodySyntax = Body;
+        }
+
+        public IType DeclaringType { const get return DeclaringState.DeclaringType; }
+
+        public string Name
+        {
+            const get return DeclaratorSyntax.Name;
+        }
+        public string FullName
+        {
+            const get return MemberExtensions.CombineNames(DeclaringType.FullName, Name);
+        }
+
+        public bool IsConstructor
+        {
+            const get return false;
+        }
+
+        public bool IsStatic
+        {
+            const get return true;
+        }
+
+        public const [IAttribute] GetAttributes()
+        {
+            return new IAttribute[] { new AccessAttribute(AccessModifier.Public) };
+        }
+
+        private IParameter[] parameters;
+        public const IParameter[] GetParameters()
+        {
+            if (parameters == null)
+            {
+                var results = new List<IParameter>();
+                foreach (var item in DeclaratorSyntax.Parameters)
+                {
+                    var type = item.CreateVerifiedType(DeclaringState);
+                    var param = new DescribedParameter(item.Name, type);
+                    results.Add(param);
+                }
+                if (results.Count == 1 && results[0].ParameterType.Equals(PrimitiveTypes.Void))
+                {
+                    parameters = new IParameter[] { };
+                }
+                else
+                {
+                    parameters = results.ToArray();
+                }
+            }
+            return parameters;
+        }
+
+        private IType retType;
+        public IType ReturnType
+        {
+            const get
+            {
+                if (retType == null)
+                {
+                    retType = DeclaratorSyntax.Declarator.CreateType(ElementType, DeclaringState);
+                }
+                return retType;
+            }
+        }
+
+        public const ICSyntaxState GetSyntaxState()
+        {
+            return new SyntaxState(DeclaringState.DeclaringUnit, this,
+                DeclaringState.Binder, DeclaringState.Log,
+                DeclaringState.MemberProvider, DeclaringState.TypeNamer);
+        }
+
+        private IStatement cachedBody;
+        public const IStatement GetMethodBody()
+        {
+            if (cachedBody == null)
+            {
+                if (!IsDefinition)
+                {
+                    DeclaringState.Log.LogError(new LogEntry("Undefined declaration",
+                        "Function '" + FullName + "' is declared, but never defined.",
+                        DeclaratorSyntax.Location));
+                    return null;
+                }
+
+                var state = GetSyntaxState();
+                var body = BodySyntax.CreateVerifiedStatement(state);
+                if (!this.HasReturnValue)
+                {
+                    cachedBody = new BlockStatement(new IStatement[] { body, new ReturnStatement() });
+                }
+                else
+                {
+                    cachedBody = body;
+                }
+            }
+            return cachedBody;
+        }
+
+        public const IMethod[] GetBaseMethods()
+        {
+            return new IMethod[] { };
+        }
+
+        public IBoundObject Invoke(IBoundObject Caller, [IBoundObject] Arguments)
+        {
+            return null;
+        }
+
+        public const [IType] GetGenericArguments()
+        {
+            return Enumerable.Empty<IType>();
+        }
+
+        public const [IGenericParameter] GetGenericParameters()
+        {
+            return Enumerable.Empty<IGenericParameter>();
+        }
+
+        public const IMethod GetGenericDeclaration()
+        {
+            return this;
+        }
+
+        public const IMethod MakeGenericMethod([IType] TypeArguments)
+        {
+            return this;
+        }
+    }
+}

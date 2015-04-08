@@ -1,0 +1,187 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Flame.Build;
+using Flame.Compiler;
+using Flame.Compiler.Build;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Expressions;
+using Flame.C.Lexer;
+using Flame.Syntax;
+using Flame.Syntax.C;
+
+namespace Flame.C.Build
+{
+    public class SyntaxStruct : IType
+    {
+        public const this(set StructDeclarationSyntax DeclarationSyntax,
+            set ICSyntaxState DeclaringState);
+
+        public const this(set StructDefinitionSyntax DefinitionSyntax,
+            set ICSyntaxState DeclaringState)
+        {
+            this.DeclarationSyntax = DefinitionSyntax.Declaration;
+        }
+
+        public StructDeclarationSyntax DeclarationSyntax { const get; private set; }
+        public StructDefinitionSyntax DefinitionSyntax { const get; private set; }
+        public ICSyntaxState DeclaringState { const get; private set; }
+        public INamespace DeclaringNamespace { const get return DeclaringState.DeclaringUnit; }
+
+        public string Name { const get return DeclarationSyntax.TypeName; }
+
+        public bool IsDefinition
+        {
+            const get return DefinitionSyntax != null;
+        }
+
+        public void MakeDefinition(SyntaxStruct Other)
+        {
+            MakeDefinition(Other.DefinitionSyntax);
+        }
+
+        public void MakeDefinition(StructDefinitionSyntax Body)
+        {
+            this.DefinitionSyntax = Body;
+        }
+
+        public const ICSyntaxState GetSyntaxState()
+        {
+            var descMethod = new DescribedMethod();
+            descMethod.DeclaringType = this;
+            return new SyntaxState(DeclaringState.DeclaringUnit, descMethod,
+                DeclaringState.Binder, DeclaringState.Log,
+                DeclaringState.MemberProvider, DeclaringState.TypeNamer);
+        }
+
+        public string FullName
+        {
+            const get return MemberExtensions.CombineNames(DeclaringNamespace.FullName, Name);
+        }
+
+        public const [IAttribute] GetAttributes()
+        {
+            return new IAttribute[]
+            {
+                new AccessAttribute(AccessModifier.Public),
+                PrimitiveAttributes.ValueTypeAttribute
+            };
+        }
+
+        public const [IType] GetGenericArguments()
+        {
+            return Enumerable.Empty<IType>();
+        }
+
+        public const [IGenericParameter] GetGenericParameters()
+        {
+            return Enumerable.Empty<IGenericParameter>();
+        }
+
+        public const IType GetGenericDeclaration()
+        {
+            return this;
+        }
+
+        public const IType MakeGenericType([IType] TypeArguments)
+        {
+            return this;
+        }
+
+        public bool IsContainerType
+        {
+            const get return false;
+        }
+
+        public const IContainerType AsContainerType()
+        {
+            return null;
+        }
+
+        public const IArrayType MakeArrayType(int Rank)
+        {
+            return new DescribedArrayType(this, Rank);
+        }
+
+        public const IPointerType MakePointerType(PointerKind Kind)
+        {
+            return new DescribedPointerType(this, Kind);
+        }
+
+        public const IVectorType MakeVectorType(int[] Dimensions)
+        {
+            return new DescribedVectorType(this, Dimensions);
+        }
+
+        public const IBoundObject GetDefaultValue()
+        {
+            return null;
+        }
+
+        #region Members
+
+        public IType[] GetBaseTypes()
+        {
+            return new IType[] { };
+        }
+
+        public const IMethod[] GetMethods()
+        {
+            return new IMethod[] { };
+        }
+
+        public const IMethod[] GetConstructors()
+        {
+            return new IMethod[] { };
+        }
+
+        public const IProperty[] GetProperties()
+        {
+            return new IProperty[] { };
+        }
+
+        private IField[] cachedFields;
+        public const IField[] GetFields()
+        {
+            if (cachedFields == null)
+            {
+                if (!IsDefinition)
+                {
+                    DeclaringState.Log.LogError(new LogEntry("Forward reference",
+                        "Struct '" + Name + "' is used before it is defined.",
+                        DeclarationSyntax.Location));
+
+                    return new IField[] { }; // Be somewhat civil
+                }
+                var results = new List<IField>();
+                var state = GetSyntaxState();
+                foreach (var item in DefinitionSyntax.Fields)
+                {
+                    var type = item.Type.CreateVerifiedType(state);
+                    foreach (var fieldDecl in item.Declarations)
+                    {
+                        var field = new SyntaxField(type, fieldDecl.Declarator,
+                                                    state);
+                        field.DeclaringType = this;
+
+                        if (fieldDecl.Value != null)
+                        {
+                            field.MakeDefinition(fieldDecl.Value.CreateVerifiedExpression(state));
+                        }
+                        results.Add(field);
+                    }
+                }
+                cachedFields = results.ToArray();
+            }
+            return cachedFields;
+        }
+        public IField[] Fields { const get return GetFields(); }
+
+        public ITypeMember[] GetMembers()
+        {
+            return GetFields();
+        }
+
+        #endregion
+    }
+}

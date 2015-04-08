@@ -1,0 +1,96 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Flame.Build;
+using Flame.Binding;
+using Flame.Compiler;
+using Flame.Syntax;
+using Flame.Syntax.C;
+
+namespace Flame.C.Build
+{
+    public class SyntaxAssembly : IAssembly, INamespaceBranch
+    {
+        public const this(set string Name, set Version AssemblyVersion,
+            set ICompilerLog Log, set IBinder ExternalBinder,
+            set IConverter<IType, string> TypeNamer)
+        {
+            this.units = new List<CompilationUnit>();
+            this.globalBackingType = new DescribedType("Globals", this);
+        }
+
+        private List<CompilationUnit> units;
+        private DescribedType globalBackingType;
+        public IType GlobalType { const get return globalBackingType; }
+
+        public string Name { const get; private set; }
+        public Version AssemblyVersion { const get; private set; }
+        public IBinder ExternalBinder { const get; private set; }
+        public IAssembly DeclaringAssembly { const get return this; }
+        public ICompilerLog Log { const get; private set; }
+        public IEnvironment Environment { const get return ExternalBinder.Environment; }
+        public IConverter<IType, string> TypeNamer { const get; private set; }
+
+        public void AddCompilationUnit(CompilationUnit Unit)
+        {
+            units.Add(Unit);
+        }
+        public void DeclareGlobal(SyntaxField Field)
+        {
+            var preExisting = globalBackingType.GetField(Field.Name, true);
+            if (preExisting == null)
+            {
+                Field.DeclaringType = globalBackingType;
+                globalBackingType.AddField(Field);
+            }
+            else if (Field.IsDefinition)
+            {
+                ((SyntaxField)preExisting).MakeDefinition(Field);
+            }
+        }
+        public void DeclareGlobal(SyntaxFunction Method)
+        {
+            var preExisting = globalBackingType.GetMethod(Method.Name, true, Method.ReturnType, Method.GetParameters().GetTypes());
+            if (preExisting == null)
+            {
+                globalBackingType.AddMethod(Method);
+            }
+            else if (Method.IsDefinition)
+            {
+                ((SyntaxFunction)preExisting).MakeDefinition(Method);
+            }
+        }
+
+        public string FullName { const get return Name; }
+
+        public [IAttribute] GetAttributes()
+        {
+            return Enumerable.Empty<IAttribute>();
+        }
+
+        public const IMethod GetEntryPoint()
+        {
+            return null;
+        }
+
+        public const IBinder CreateBinder()
+        {
+            return new NamespaceTreeBinder(ExternalBinder.Environment, this);
+        }
+
+        public const IType[] GetTypes()
+        {
+            [IType] results = new IType[] { GlobalType };
+            foreach (var item in units)
+            {
+                results = Enumerable.Concat<IType>(results, item.GetTypes());
+            }
+            return Enumerable.ToArray<IType>(results);
+        }
+
+        public const [INamespaceBranch] GetNamespaces()
+        {
+            return Enumerable.Empty<INamespaceBranch>();
+        }
+    }
+}

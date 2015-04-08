@@ -1,0 +1,95 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Flame.Build;
+using Flame.Compiler;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Expressions;
+using Flame.C.Lexer;
+using Flame.Syntax;
+using Flame.Syntax.C;
+
+namespace Flame.C.Build
+{
+    public class SyntaxField : IField, IInitializedField
+    {
+        public const this(set IType ElementType,
+            set IDeclaratorSyntax DeclaratorSyntax,
+            set ICSyntaxState DeclaringState, set bool IsStatic);
+
+        public const this(set IType ElementType,
+            set IDeclaratorSyntax DeclaratorSyntax,
+            set ICSyntaxState DeclaringState);
+
+        public bool IsStatic { const get; private set; }
+        public IType ElementType { const get; private set; }
+        public IDeclaratorSyntax DeclaratorSyntax { const get; private set; }
+        public ICSyntaxState DeclaringState { const get; private set; }
+        public IExpression Value { const get; private set; }
+        public IType DeclaringType { const get; set; }
+
+        public const IExpression GetValue()
+        {
+            return Value;
+        }
+
+        public bool IsDefinition
+        {
+            const get return Value != null;
+        }
+
+        public void MakeDefinition(SyntaxField Other)
+        {
+            this.fieldType = Other.FieldType;
+            this.Value = Other.Value;
+        }
+
+        public void MakeDefinition(IExpression Value)
+        {
+            this.Value = Value;
+            this.Value = CastSyntax.CreateImplicitCast(DeclaringState, Value, DeclaratorSyntax, FieldType);
+        }
+
+        public string Name
+        {
+            const get return DeclaratorSyntax.Name;
+        }
+        public string FullName
+        {
+            const get
+            {
+                if (DeclaringType == null) return Name;
+                else return MemberExtensions.CombineNames(DeclaringType.FullName, Name);
+            }
+        }
+
+        public const [IAttribute] GetAttributes()
+        {
+            return new IAttribute[] { new AccessAttribute(AccessModifier.Public) };
+        }
+
+        private IType fieldType;
+        public IType FieldType
+        {
+            const get
+            {
+                if (fieldType == null)
+                {
+                    if (ElementType != null)
+                    {
+                        fieldType = DeclaratorSyntax.CreateType(ElementType, DeclaringState);
+                    }
+                    else if (Value != null)
+                    {
+                        fieldType = DeclaratorSyntax.CreateType(Value.Type, DeclaringState);
+                    }
+                    else
+                    {
+                        DeclaringState.Log.LogError(new LogEntry("Type inference error", "Could not infer 'auto' type in field '" + this.Name + "' as the field was not initialized with an expression", DeclaratorSyntax.GetSourceLocation()));
+                    }
+                }
+                return fieldType;
+            }
+        }
+    }
+}
