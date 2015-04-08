@@ -47,6 +47,7 @@
         <Compile Include="Syntax/Expressions/CharSyntax.ds" />
         <Compile Include="Syntax/Expressions/CastSyntax.ds" />
         <Compile Include="Syntax/Expressions/FloatSyntax.ds" />
+        <Compile Include="Syntax/Expressions/GenericSyntax.ds" />
         <Compile Include="Syntax/Expressions/IndexedElementSyntax.ds" />
         <Compile Include="Syntax/Expressions/IntegerSyntax.ds" />
         <Compile Include="Syntax/Expressions/InvocationSyntax.ds" />

@@ -128,6 +128,8 @@ namespace Flame.C.Lexer
 			RegisterExample(TokenType.IntKeyword, "int");
 			RegisterExample(TokenType.FloatKeyword, "float");
 			RegisterExample(TokenType.DoubleKeyword, "double");
+			RegisterExample(TokenType.GenericKeyword, "_Generic");
+			RegisterExample(TokenType.DefaultKeyword, "default");
 		}
 
 		private Dictionary<TokenType, TokenExample> examples;

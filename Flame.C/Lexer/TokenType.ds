@@ -42,6 +42,7 @@ namespace Flame.C.Lexer
         InlineKeyword = 47,
         ConstKeyword = 48,
         StaticKeyword = 49,
+        DefaultKeyword = 50,
         NullKeyword = 54,
         BreakKeyword = 55,
         ContinueKeyword = 56,
@@ -99,6 +100,7 @@ namespace Flame.C.Lexer
         FloatKeyword = 108,
         DoubleKeyword = 109,
         VoidKeyword = 110,
+        GenericKeyword = 111
     }
 
     #endregion

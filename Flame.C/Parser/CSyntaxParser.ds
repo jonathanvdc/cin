@@ -75,6 +75,10 @@ namespace Flame.C.Parser
             {
                 expr = ParseParenthesesExpression(token, Parser);
             }
+            else if (token.Type == TokenType.GenericKeyword)
+            {
+                expr = ParseGenericExpression(token, Parser);
+            }
             else
             {
                 Log.LogError(new LogEntry("Parser error", "Could not identify token '" + token.TokenValue + "' as valid expression syntax.", token.Location));
@@ -375,6 +379,62 @@ namespace Flame.C.Parser
                 var lParen = Parser.NextNoTrivia(TokenType.LParen, Log);
                 return new ParenthesesSyntax(RParen, expr, lParen);
             }
+        }
+
+        #endregion
+
+        #region ParseGenericExpression
+
+        protected virtual GenericCaseSyntax ParseGenericCase(ITokenStream Tokens)
+        {
+            if (Tokens.PeekNoTrivia().Type == TokenType.DefaultKeyword)
+            {
+                var defaultKeyword = Tokens.NextNoTrivia(TokenType.DefaultKeyword, Log);
+                var colon = Tokens.NextNoTrivia(TokenType.Colon, Log);
+                var expr = ParseExpression(Tokens);
+                return new GenericCaseSyntax(defaultKeyword, colon, expr);
+            }
+            else
+            {
+                var type = ParseDeclaration(Tokens, false);
+                var colon = Tokens.NextNoTrivia(TokenType.Colon, Log);
+                var expr = ParseExpression(Tokens);
+                return new GenericCaseSyntax(type, colon, expr);
+            }
+        }
+
+        protected virtual SeparatedList<GenericCaseSyntax> ParseGenericCaseList(ITokenStream Parser)
+        {
+            var exprs = new List<SeparatedItem<GenericCaseSyntax>>();
+
+            var separator = Token.Undefined;
+            var peek = Parser.PeekNoTrivia();
+            while (peek.Type != TokenType.LParen)
+            {
+                exprs.Add(new SeparatedItem<GenericCaseSyntax>(separator, ParseGenericCase(Parser)));
+                peek = Parser.PeekNoTrivia();
+                if (peek.Type == TokenType.Comma)
+                {
+                    separator = Parser.NextNoTrivia();
+                }
+                else
+                {
+                    //peek.TokenPeek.EnsureType(RightDelimiter, Log);
+                    break;
+                }
+            }
+
+            return new SeparatedList<GenericCaseSyntax>(exprs);
+        }
+
+        protected virtual IExpressionSyntax ParseGenericExpression(Token GenericKeyword, ITokenStream Tokens)
+        {
+            var rParen = Tokens.NextNoTrivia(TokenType.RParen, Log);
+            var expr = ParseExpression(Tokens);
+            var comma = Tokens.NextNoTrivia(TokenType.Comma, Log);
+            var cases = ParseGenericCaseList(Tokens);
+            var lParen = Tokens.NextNoTrivia(TokenType.LParen, Log);
+            return new GenericSyntax(GenericKeyword, rParen, expr, comma, cases, lParen);
         }
 
         #endregion

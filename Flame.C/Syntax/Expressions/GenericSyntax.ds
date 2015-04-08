@@ -1,0 +1,133 @@
+using System;
+using Flame.Compiler;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class GenericSyntax : IExpressionSyntax, ISourceSyntax
+    {
+        public const this(set Token GenericKeyword, set Token LeadingParentheses,
+            set IExpressionSyntax Target, set Token Comma,
+            set SeparatedList<GenericCaseSyntax> Cases, set Token TrailingParentheses);
+
+        public Token GenericKeyword { const get; private set; }
+        public Token LeadingParentheses { const get; private set; }
+        public IExpressionSyntax Target { const get; private set; }
+        public Token Comma { const get; private set; }
+        public SeparatedList<GenericCaseSyntax> Cases { const get; private set; }
+        public Token TrailingParentheses { const get; private set; }
+
+        public SourceLocation Location
+        {
+            const get return GenericKeyword.Location
+                .Concat(LeadingParentheses.Location)
+                .Concat(Target.GetSourceLocation())
+                .Concat(Cases.Location)
+                .Concat(Comma.Location)
+                .Concat(TrailingParentheses.Location);
+        }
+
+        public IExpression CreateExpression(ISyntaxState State)
+        {
+            var expr = Target.CreateVerifiedExpression(State);
+            var exprType = expr.Type;
+
+            int bestMatch = 2;
+            IExpressionSyntax matchedExpr = null;
+
+            foreach (var item in Cases)
+            {
+                if (item.IsDefault)
+                {
+                    if (bestMatch > 1)
+                        matchedExpr = item.Result;
+                }
+                else
+                {
+                    var caseType = item.Type.CreateVerifiedType(State);
+                    if (caseType != null)
+                    {
+                        if (exprType.Equals(caseType))
+                        {
+                            bestMatch = 0;
+                            return item.Result.CreateVerifiedExpression(State);
+                        }
+                        else if (CastSyntax.UseImplicitCast(State, exprType, caseType))
+                        {
+                            bestMatch = 1;
+                            matchedExpr = item.Result;
+                        }
+                    }
+                }
+            }
+
+            if (matchedExpr == null)
+            {
+                State.Log.LogError(new LogEntry("Non-exhaustive generic switch",
+                    "Generic type switch on '" + Target.GetCode().Trim().ToString() + "' was not exhaustive and does not have a default clause.",
+                    Location));
+                return null;
+            }
+
+            return matchedExpr.CreateVerifiedExpression(State);
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            var cb = new CodeBuilder();
+            cb.Append(GenericKeyword.ToString());
+            cb.Append(LeadingParentheses.ToString());
+            cb.Append(Target.GetCode());
+            cb.Append(Comma.ToString());
+            cb.Append(Cases.GetCode());
+            cb.Append(TrailingParentheses.ToString());
+            return cb;
+        }
+    }
+
+    public class GenericCaseSyntax : ISourceSyntax
+    {
+        public const this(set Token DefaultKeyword, set Token Colon, set IExpressionSyntax Result);
+        public const this(set DeclarationSyntax Type, set Token Colon, set IExpressionSyntax Result);
+
+        public DeclarationSyntax Type { const get; private set; }
+        public Token DefaultKeyword { const get; private set; }
+        public Token Colon { const get; private set; }
+        public IExpressionSyntax Result { const get; private set; }
+
+        public bool IsDefault { const get return Type == null; }
+
+        public SourceLocation Location
+        {
+            const get
+            {
+                SourceLocation first;
+                if (IsDefault)
+                {
+                    first = DefaultKeyword.Location;
+                }
+                else
+                {
+                    first = Type.GetSourceLocation();
+                }
+                return first.Concat(Colon.Location).Concat(Result.GetSourceLocation());
+            }
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            var cb = new CodeBuilder();
+            if (!IsDefault)
+            {
+                cb.Append(Type.GetCode());
+            }
+            else
+            {
+                cb.Append(DefaultKeyword.ToString());
+            }
+            cb.Append(Colon.ToString());
+            cb.Append(Result.GetCode());
+            return cb;
+        }
+    }
+}

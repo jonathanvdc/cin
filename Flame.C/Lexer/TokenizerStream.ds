@@ -50,6 +50,8 @@ namespace Flame.C.Lexer
 			this.keywords["int"] = TokenType.IntKeyword;
 			this.keywords["float"] = TokenType.FloatKeyword;
 			this.keywords["double"] = TokenType.DoubleKeyword;
+			this.keywords["_Generic"] = TokenType.GenericKeyword;
+			this.keywords["default"] = TokenType.DefaultKeyword;
 
 			this.operators1 = new Dictionary<char, TokenType>();
 			this.operators1[';'] = TokenType.Semicolon;
