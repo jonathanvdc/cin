@@ -1,17 +1,28 @@
 
+struct A { int x; };
+
 int Square(int Value)
 {
     return Value * Value;
 }
 
-int SquareDouble(double Value)
+struct A SquareA(struct A Value)
+{
+    struct A result;
+    result.x = Square(Value.x);
+    return result;
+}
+
+double SquareDouble(double Value)
 {
     return Value * Value;
 }
 
 int Test(void)
 {
-    int val = 5;
-    return _Generic(val, double: SquareDouble(val),
-                         int: Square(val));
+    struct A val;
+    val.x = 5;
+    return _Generic(val, int: Square(val),
+                         struct A: SquareA(val),
+                         default: SquareDouble(val));
 }
