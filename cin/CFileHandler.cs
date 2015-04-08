@@ -59,8 +59,7 @@ namespace cin
             for (int i = 0; i < units.Length; i++)
             {
                 var item = SourceItems[i];
-                units[i] = ParseCompilationUnitAsync(item, Assembly, Parameters)
-                    .ContinueWith(async result => Assembly.AddCompilationUnit(await result));
+                units[i] = ParseCompilationUnitAsync(item, Assembly, Parameters);
             }
             return Task.WhenAll(units);
         }
@@ -102,7 +101,7 @@ namespace cin
         public static CompilationUnit ParseCompilationUnit(ITokenStream TokenParser, SyntaxAssembly Assembly)
         {
             var syntaxParser = new CSyntaxParser(Assembly.Log);
-            var unit = new CompilationUnit(Assembly);
+            var unit = Assembly.CreateCompilationUnit();
             var state = unit.GetSyntaxState();
 
             IDeclarationSyntax[] decls;

@@ -5,6 +5,7 @@ namespace Flame.Syntax.C
     public interface ICSyntaxState : ISyntaxState
     {
         CompilationUnit DeclaringUnit { const get; }
+        DeclarationScope Scope { const get; }
 
         IMethod Declare(SyntaxFunction Method);
         IType Declare(SyntaxStruct Type);

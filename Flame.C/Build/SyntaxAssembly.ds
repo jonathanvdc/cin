@@ -31,9 +31,11 @@ namespace Flame.C.Build
         public IEnvironment Environment { const get return ExternalBinder.Environment; }
         public IConverter<IType, string> TypeNamer { const get; private set; }
 
-        public void AddCompilationUnit(CompilationUnit Unit)
+        public CompilationUnit CreateCompilationUnit()
         {
-            units.Add(Unit);
+            var unit = new CompilationUnit(this);
+            units.Add(unit);
+            return unit;
         }
         public void DeclareGlobal(SyntaxField Field)
         {
@@ -60,6 +62,23 @@ namespace Flame.C.Build
                 ((SyntaxFunction)preExisting).MakeDefinition(Method);
             }
         }
+        public void RenameGlobal(SyntaxStruct Type)
+        {
+            string fullName = Type.FullName;
+
+            if (!ContainsType(fullName))
+            {
+                return;
+            }
+
+            int index = 1;
+            while (ContainsType(fullName + (string)index))
+            {
+                index++;
+            }
+
+            Type.Name = Type.Name + (string)index;
+        }
 
         public string FullName { const get return Name; }
 
@@ -76,6 +95,22 @@ namespace Flame.C.Build
         public const IBinder CreateBinder()
         {
             return new NamespaceTreeBinder(ExternalBinder.Environment, this);
+        }
+
+        public const bool ContainsType(string FullName)
+        {
+            if (FullName.Equals(GlobalType.FullName))
+                return true;
+
+            foreach (var item in units)
+            {
+                foreach (var type in item.GetTypes())
+                    if (type.FullName.Equals(FullName))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public const IType[] GetTypes()

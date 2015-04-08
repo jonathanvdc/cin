@@ -17,7 +17,8 @@
   <ItemGroup Name="Build">
       <Compile Include="Build/CBuildHelpers.ds" />
       <Compile Include="Build/CompilationUnit.ds" />
-      <Compile Include="Build/CompilationUnitBinder.ds" />
+      <Compile Include="Build/ICMember.ds" />
+      <Compile Include="Build/ICType.ds" />
       <Compile Include="Build/SyntaxAssembly.ds" />
       <Compile Include="Build/SyntaxField.ds" />
       <Compile Include="Build/SyntaxFunction.ds" />
@@ -96,6 +97,7 @@
         <Compile Include="Syntax/Types/StructDefinitionSyntax.ds" />
         <Compile Include="Syntax/Types/TaggedTypeSyntax.ds" />
     </ItemGroup>
+    <Compile Include="Syntax/DeclarationScope.ds" />
     <Compile Include="Syntax/DelimitedList.ds" />
     <Compile Include="Syntax/ICSyntaxState.ds" />
     <Compile Include="Syntax/IDeclarationSyntax.ds" />
@@ -103,6 +105,7 @@
     <Compile Include="Syntax/SeparatedList.ds" />
     <Compile Include="Syntax/SingleVariableDeclaration.ds" />
     <Compile Include="Syntax/SyntaxState.ds" />
+    <Compile Include="Syntax/SyntaxStateBinder.ds" />
   </ItemGroup>
   <ItemGroup Name="Variables">
       <Compile Include="Variables/AssignedVariable.ds" />

@@ -43,6 +43,7 @@ namespace Flame.Syntax.C
             var elemType = Declaration.ElementType.CreateVerifiedType(State);
             var func = new SyntaxFunction(elemType, Declarator, Body, State);
             State.Declare(func);
+            func.GetMethodBody();
         }
 
         public const CodeBuilder GetCode()

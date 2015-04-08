@@ -1,0 +1,9 @@
+
+namespace Flame.C.Build
+{
+    public interface ICMember : IMember
+    {
+        bool IsDefinition { const get; }
+        CompilationUnit DeclaringUnit { const get; }
+    }
+}

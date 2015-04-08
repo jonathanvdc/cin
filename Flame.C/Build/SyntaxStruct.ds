@@ -12,23 +12,51 @@ using Flame.Syntax.C;
 
 namespace Flame.C.Build
 {
-    public class SyntaxStruct : IType
+    public class SyntaxStruct : ICType
     {
         public const this(set StructDeclarationSyntax DeclarationSyntax,
-            set ICSyntaxState DeclaringState);
+            set ICSyntaxState DeclaringState)
+        {
+            this.Name = GenerateName();
+        }
 
         public const this(set StructDefinitionSyntax DefinitionSyntax,
             set ICSyntaxState DeclaringState)
         {
             this.DeclarationSyntax = DefinitionSyntax.Declaration;
+            this.Name = GenerateName();
+        }
+
+        private const string GenerateName()
+        {
+            string tName = TypeName;
+            if (!string.IsNullOrWhiteSpace(tName))
+                return tName;
+            else return "anonymous_struct";
         }
 
         public StructDeclarationSyntax DeclarationSyntax { const get; private set; }
         public StructDefinitionSyntax DefinitionSyntax { const get; private set; }
         public ICSyntaxState DeclaringState { const get; private set; }
         public INamespace DeclaringNamespace { const get return DeclaringState.DeclaringUnit; }
+        public string Name { const get; set; }
 
-        public string Name { const get return DeclarationSyntax.TypeName; }
+        public string TypeName { const get return DeclarationSyntax.TypeName; }
+        public string LocalName
+        {
+            const get
+            {
+                string tName = TypeName;
+                if (!string.IsNullOrWhiteSpace(tName))
+                    return "struct " + tName;
+                else return null;
+            }
+        }
+
+        public CompilationUnit DeclaringUnit
+        {
+            const get return DeclaringState.DeclaringUnit;
+        }
 
         public bool IsDefinition
         {
@@ -50,7 +78,7 @@ namespace Flame.C.Build
             var descMethod = new DescribedMethod();
             descMethod.DeclaringType = this;
             return new SyntaxState(DeclaringState.DeclaringUnit, descMethod,
-                DeclaringState.Binder, DeclaringState.Log,
+                DeclaringState.Scope, DeclaringState.Log,
                 DeclaringState.MemberProvider, DeclaringState.TypeNamer);
         }
 

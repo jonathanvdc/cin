@@ -1,0 +1,16 @@
+
+namespace Flame.C.Build
+{
+    public interface ICType : IType, ICMember
+    {
+        string LocalName { const get; }
+    }
+
+    public static class CTypeExtensions
+    {
+        public static bool IsAnonymous[this ICType Type]
+        {
+            const get return Type.LocalName == null;
+        }
+    }
+}

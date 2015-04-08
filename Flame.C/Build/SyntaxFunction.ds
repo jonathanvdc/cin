@@ -107,12 +107,12 @@ namespace Flame.C.Build
         public const ICSyntaxState GetSyntaxState()
         {
             return new SyntaxState(DeclaringState.DeclaringUnit, this,
-                DeclaringState.Binder, DeclaringState.Log,
+                DeclaringState.Scope, DeclaringState.Log,
                 DeclaringState.MemberProvider, DeclaringState.TypeNamer);
         }
 
         private IStatement cachedBody;
-        public const IStatement GetMethodBody()
+        public IStatement GetMethodBody()
         {
             if (cachedBody == null)
             {

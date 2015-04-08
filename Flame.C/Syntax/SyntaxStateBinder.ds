@@ -1,0 +1,43 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Flame.Build;
+using Flame.Compiler;
+using Flame.C.Build;
+
+namespace Flame.Syntax.C
+{
+    public class SyntaxStateBinder : IBinder
+    {
+        public const this(set SyntaxState State);
+
+        public SyntaxState State { const get; private set; }
+        public DeclarationScope Scope { const get return State.Scope; }
+        public CompilationUnit Unit { const get return State.DeclaringUnit; }
+        public IEnvironment Environment { const get return Unit.Assembly.Environment; }
+
+        private const IType GetType(string Name, [ICType] Types)
+        {
+            foreach (var item in Types)
+                if (Name.Equals(item.LocalName))
+            {
+                return item;
+            }
+            return null;
+        }
+
+        public const IType BindType(string Name)
+        {
+            var result = GetType(Name, Scope.AllTypes);
+            if (result != null)
+                return result;
+
+            return Unit.Assembly.ExternalBinder.BindType(Name);
+        }
+
+        public const [IType] GetTypes()
+        {
+            return ([IType])Scope.AllTypes;
+        }
+    }
+}

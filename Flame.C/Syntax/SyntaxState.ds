@@ -14,20 +14,22 @@ namespace Flame.Syntax.C
     public class SyntaxState : ICSyntaxState
     {
         public const this(set CompilationUnit DeclaringUnit, set IMethod Method,
-            set IBinder Binder, set ICompilerLog Log,
+            set DeclarationScope Scope, set ICompilerLog Log,
             set IConverter<IType, string> TypeNamer)
         {
+            this.Binder = new SyntaxStateBinder(this);
             this.MemberProvider = new MemberProvider(Binder);
             this.declaredVariables = new Stack<Dictionary<string, IVariable>>();
-            PushScope();
+            PushVariableScope();
         }
         public const this(set CompilationUnit DeclaringUnit, set IMethod Method,
-            set IBinder Binder, set ICompilerLog Log,
+            set DeclarationScope Scope, set ICompilerLog Log,
             set IMemberProvider MemberProvider,
             set IConverter<IType, string> TypeNamer)
         {
+            this.Binder = new SyntaxStateBinder(this);
             this.declaredVariables = new Stack<Dictionary<string, IVariable>>();
-            PushScope();
+            PushVariableScope();
         }
 
         public IType CurrentType
@@ -51,6 +53,7 @@ namespace Flame.Syntax.C
         public IBinder Binder { const get; private set; }
         public IConverter<IType, string> TypeNamer { const get; private set; }
         public IMemberProvider MemberProvider { const get; private set; }
+        public DeclarationScope Scope { const get; private set; }
 
         private Stack<Dictionary<string, IVariable>> declaredVariables;
         public Dictionary<string, IVariable> Locals
@@ -126,9 +129,15 @@ namespace Flame.Syntax.C
             }
         }
 
-        public void PushScope()
+        private void PushVariableScope()
         {
             this.declaredVariables.Push(new Dictionary<string, IVariable>());
+        }
+
+        public void PushScope()
+        {
+            PushVariableScope();
+            this.Scope = new DeclarationScope(this.DeclaringUnit, this.Scope);
         }
 
         public IStatement PopScope()
@@ -139,6 +148,7 @@ namespace Flame.Syntax.C
             {
                 statements.Add(item.Value.CreateReleaseStatement());
             }
+            this.Scope = this.Scope.Parent;
             return new BlockStatement(statements.ToArray());
         }
 
@@ -146,17 +156,17 @@ namespace Flame.Syntax.C
 
         public IMethod Declare(SyntaxFunction Function)
         {
-            return DeclaringUnit.Declare(Function);
+            return Scope.Declare(Function);
         }
 
         public IType Declare(SyntaxStruct Type)
         {
-            return DeclaringUnit.Declare(Type);
+            return Scope.Declare(Type);
         }
 
         public IField Declare(SyntaxField Field)
         {
-            return DeclaringUnit.Declare(Field);
+            return Scope.Declare(Field);
         }
 
         #endregion
