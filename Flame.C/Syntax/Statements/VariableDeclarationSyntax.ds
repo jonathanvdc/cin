@@ -43,17 +43,21 @@ namespace Flame.Syntax.C
         	return list;
         }
 
-        public override IStatement CreateStatement(ISyntaxState State)
+        public IType CreateElementType(ISyntaxState State)
         {
-            return CreateStatement(State, null);
+            if (Type.IsVariable)
+                return null;
+            else
+                return Type.CreateVerifiedType(State);
         }
 
-        public IStatement CreateStatement(ISyntaxState State, IType TypeHint)
+        public override IStatement CreateStatement(ISyntaxState State)
         {
             var children = new List<IStatement>();
+            var elemType = CreateElementType(State);
             foreach (var item in Declarations)
             {
-                children.Add(item.CreateStatement(Type, State, TypeHint));
+                children.Add(item.CreateStatement(elemType, State));
             }
             return new BlockStatement(children);
         }

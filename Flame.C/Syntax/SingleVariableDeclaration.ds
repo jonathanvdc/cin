@@ -9,7 +9,7 @@ using Flame.C.Lexer;
 
 namespace Flame.Syntax.C
 {
-    public class SingleVariableDeclaration : ISyntaxNode
+    public class SingleVariableDeclaration : ISourceSyntax
     {
         public const this(set IDeclaratorSyntax Declarator)
         {
@@ -24,19 +24,32 @@ namespace Flame.Syntax.C
 
         public string Name { const get return Declarator.Name; }
 
+        public SourceLocation AssignmentLocation
+        {
+            const get
+            {
+                if (Value == null) return null;
+                else return Operator.Location.Concat(Value.GetSourceLocation());
+            }
+        }
+
+        public SourceLocation Location
+        {
+            const get
+            {
+                if (Value == null) return Declarator.GetSourceLocation();
+                else return Declarator.GetSourceLocation().Concat(AssignmentLocation);
+            }
+        }
+
         public const IVariable GetDeclaredVariable(ISyntaxState State)
         {
             return State.GetVariable(Name);
         }
 
-        public const IStatement CreateStatement(ITypeSyntax VariableType, ISyntaxState State)
+        public const IStatement CreateStatement(IType ElementType, ISyntaxState State)
         {
-            return CreateStatement(VariableType, State, null);
-        }
-
-        public const IStatement CreateStatement(ITypeSyntax VariableType, ISyntaxState State, IType TypeHint)
-        {
-        	var variable = CreateVariable(VariableType, State, TypeHint);
+        	var variable = CreateVariable(ElementType, State);
         	if (variable is AssignedVariable)
         	{
         		return ((AssignedVariable)variable).CreateStoreStatement();
@@ -47,44 +60,23 @@ namespace Flame.Syntax.C
         	}
         }
 
-        public const IVariable CreateVariable(ITypeSyntax VariableType, ISyntaxState State, IType TypeHint)
+        public const IVariable CreateVariable(IType ElementType, ISyntaxState State)
         {
-        	bool varType;
-        	if (VariableType == null)
-        	{
-        		varType = true;
-        	}
-        	else
-        	{
-        		varType = VariableType.IsVariable;
-        	}
-            IType type;
-            if (varType && TypeHint != null)
-            {
-                type = TypeHint;
-            }
-            else
-            {
-                type = VariableType.CreateType(State);
-                if (!varType && type == null)
-                {
-                	State.Log.LogError(new LogEntry("Type resolution error", "Type '" + VariableType.GetCode().Trim().ToString() + "' in variable declaration '" + this.GetCode().Trim().ToString() + "' could not be resolved", VariableType.GetSourceLocation()));
-                }
-            }
-
             if (Value == null)
             {
-            	if (varType)
-            	{
-            		State.Log.LogError(new LogEntry("Type inference error", "Could not infer 'auto' type in variable declaration '" + this.GetCode().Trim().ToString() + "' as the variable was not initialized with an expression", VariableType.GetSourceLocation()));
-            	}
-                return State.DeclareVariable(Declarator.Name, Declarator.CreateType(type, (ICSyntaxState)State));
+                if (ElementType == null)
+                {
+                    State.Log.LogError(new LogEntry("Type inference error", "Could not infer type in variable declaration '" + this.GetCode().Trim().ToString() + "' as the variable was not initialized with an expression", Location));
+                }
+                return State.DeclareVariable(Declarator.Name, Declarator.CreateType(ElementType, (ICSyntaxState)State));
             }
             else
             {
                 IVariable val = SyntaxExtensions.CreateVerifiedVariable(Value, State);
 
-                if (varType && type == null)
+                var type = ElementType;
+
+                if (ElementType == null)
                 {
                 	type = val.Type;
                 }

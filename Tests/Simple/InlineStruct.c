@@ -11,7 +11,8 @@ int Test(void)
 double Test2(void)
 {
     struct { double x; } a;
-    struct Type { double y; } b;
+    struct Type { double y; };
+    struct Type b;
     a.x = 5;
     b.y = a.x;
     return b.y;

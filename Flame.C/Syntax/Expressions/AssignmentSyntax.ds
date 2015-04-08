@@ -10,7 +10,7 @@ using Flame.C.Lexer;
 
 namespace Flame.Syntax.C
 {
-	public class AssignmentSyntax : VariableSyntaxBase, ISetVariableExpressionSyntax
+	public class AssignmentSyntax : VariableSyntaxBase, ISetVariableExpressionSyntax, ISourceSyntax
     {
         public const this(set IVariableSyntax Variable, set IExpressionSyntax Value)
         {
@@ -21,6 +21,16 @@ namespace Flame.Syntax.C
         public IVariableSyntax Variable { const get; private set; }
         public Token Operator { const get; private set; }
         public IExpressionSyntax Value { const get; private set; }
+
+		public SourceLocation AssignmentLocation
+		{
+			const get return Operator.Location.Concat(Value.GetSourceLocation());
+		}
+
+		public SourceLocation Location
+		{
+			const get return Variable.GetSourceLocation().Concat(AssignmentLocation);
+		}
 
         public static const AssignedVariable CreateStoreVariable(ISyntaxState State, IVariable TargetVariable, Token Operator, IExpressionSyntax Value)
         {
@@ -58,7 +68,7 @@ namespace Flame.Syntax.C
         	{
         		if (Operator.Type != TokenType.Equals)
         		{
-        			State.Log.LogError(new LogEntry("Invalid assignment operator", "Operator " + Operator.ToString() + " is not supported as an assignment operator."));
+        			State.Log.LogError(new LogEntry("Invalid assignment operator", "Operator '" + Operator.ToString() + "' is not supported as an assignment operator.", Operator.Location));
         		}
         		if (SourceVariable.Type.Is(TargetVariable.Type))
         		{

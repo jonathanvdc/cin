@@ -815,7 +815,8 @@ namespace Flame.C.Parser
         protected virtual IStatementSyntax ParseExpressionStatement(ITokenStream Tokens)
         {
             var pos = Tokens.CurrentPosition;
-            var decl = ParseDeclaration(Tokens, true, false);
+            bool requireName = !Tokens.PeekNoTrivia().Type.IsTypeKindToken();
+            var decl = ParseDeclaration(Tokens, requireName, false);
             if (decl != null)
             {
                 return ParseDeclarationStatement(decl, Tokens);
@@ -891,7 +892,7 @@ namespace Flame.C.Parser
 
         protected virtual VariableDeclarationSyntax ParseDeclarationStatement(ITokenStream Tokens)
         {
-            var decl = ParseDeclaration(Tokens, true);
+            var decl = ParseDeclaration(Tokens, false);
             return ParseDeclarationStatement(decl, Tokens);
         }
 

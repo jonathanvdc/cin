@@ -74,7 +74,13 @@ namespace Flame.Syntax.C
 
         public IType Declare(SyntaxStruct Type)
         {
-            string name = Type.Name;
+            if (Type.IsAnonymous)
+            {
+                Unit.DeclareGlobal(Type);
+                return Type;
+            }
+
+            string name = Type.TypeName;
             if (!structs.ContainsKey(name))
             {
                 Unit.DeclareGlobal(Type);
@@ -83,9 +89,17 @@ namespace Flame.Syntax.C
             }
             else if (Type.IsDefinition)
             {
-                structs[name].MakeDefinition(Type);
+                var target = structs[name];
+                if (target.IsDefinition)
+                {
+                    Unit.Assembly.Log.LogError(new LogEntry("Type redefinition",
+                        "'" + Type.LocalName + "' is defined twice.",
+                        Type.DefinitionSyntax.GetSourceLocation()));
+                }
+                target.MakeDefinition(Type);
             }
-            return structs[name];
+            var result = structs[name];
+            return result;
         }
 
         public [IField] LocalFields { const get return fields.Values; }
