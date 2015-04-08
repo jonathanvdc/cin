@@ -4,6 +4,7 @@ using System.Linq;
 using Flame.Build;
 using Flame.Compiler;
 using Flame.C.Build;
+using Pixie;
 
 namespace Flame.Syntax.C
 {
@@ -39,6 +40,34 @@ namespace Flame.Syntax.C
         private Dictionary<string, IField> allFields;
         private Dictionary<string, IMethod> allMethods;
         private Dictionary<string, ICType> allTypes;
+
+        public static const IMarkupNode CreateRedefinitionNode(string Name,
+            SourceLocation NewDefinition, SourceLocation OldDefinition)
+        {
+            var firstMessage = new MarkupNode(NodeConstants.TextNodeType, "'" + Name + "' is defined more than once.");
+            var firstDiag = NewDefinition.CreateDiagnosticsNode();
+
+            var oldSrc = OldDefinition.CreateSourceNode();
+            var neutralOldSrc = new MarkupNode("neutral-diagnostics", new IMarkupNode[] { oldSrc });
+            var oldTitle = new MarkupNode(NodeConstants.TextNodeType, "Previous definition: ");
+            var oldMessage = OldDefinition.CreateLineNumberNode(NodeConstants.TextNodeType);
+
+            var oldRemark = new MarkupNode(NodeConstants.RemarksNodeType, new IMarkupNode[]
+            {
+                oldTitle,
+                oldMessage,
+                neutralOldSrc
+            });
+
+            var totalMessage = new MarkupNode("entry", new IMarkupNode[]
+            {
+                firstMessage,
+                firstDiag,
+                oldRemark
+            });
+
+            return totalMessage;
+        }
 
         public IMethod Declare(SyntaxFunction Method)
         {
@@ -93,8 +122,9 @@ namespace Flame.Syntax.C
                 if (target.IsDefinition)
                 {
                     Unit.Assembly.Log.LogError(new LogEntry("Type redefinition",
-                        "'" + Type.LocalName + "' is defined twice.",
-                        Type.DefinitionSyntax.GetSourceLocation()));
+                        CreateRedefinitionNode(Type.LocalName,
+                            Type.DefinitionSyntax.GetSourceLocation(),
+                            target.DefinitionSyntax.GetSourceLocation())));
                 }
                 target.MakeDefinition(Type);
             }
