@@ -7,6 +7,11 @@ namespace Flame.Syntax.C
         CompilationUnit DeclaringUnit { const get; }
         DeclarationScope Scope { const get; }
 
+        bool UseNewDeclarations { const get; }
+
+        void PushDeclarationType(bool UseNewDeclarations);
+        void PopDeclarationType();
+
         IMethod Declare(SyntaxFunction Method);
         IType Declare(SyntaxStruct Type);
         IField Declare(SyntaxField Field);

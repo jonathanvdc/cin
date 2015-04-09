@@ -17,7 +17,7 @@ namespace Flame.Syntax.C
             structs = new Dictionary<string, SyntaxStruct>();
             allMethods = new Dictionary<string, IMethod>();
             allFields = new Dictionary<string, IField>();
-            allTypes = new Dictionary<string, ICType>();
+            allStructs = new Dictionary<string, SyntaxStruct>();
         }
         public const this(set CompilationUnit Unit, set DeclarationScope Parent)
         {
@@ -26,7 +26,7 @@ namespace Flame.Syntax.C
             structs = new Dictionary<string, SyntaxStruct>();
             allMethods = new Dictionary<string, IMethod>(Parent.allMethods);
             allFields = new Dictionary<string, IField>(Parent.allFields);
-            allTypes = new Dictionary<string, ICType>(Parent.allTypes);
+            allStructs = new Dictionary<string, SyntaxStruct>(Parent.allStructs);
         }
 
         public CompilationUnit Unit { const get; private set; }
@@ -39,7 +39,7 @@ namespace Flame.Syntax.C
         private Dictionary<string, SyntaxStruct> structs;
         private Dictionary<string, IField> allFields;
         private Dictionary<string, IMethod> allMethods;
-        private Dictionary<string, ICType> allTypes;
+        private Dictionary<string, SyntaxStruct> allStructs;
 
         public static const IMarkupNode CreateRedefinitionNode(string Name,
             SourceLocation NewDefinition, SourceLocation OldDefinition)
@@ -101,7 +101,40 @@ namespace Flame.Syntax.C
             return fields[name];
         }
 
+        private void DefineStruct(SyntaxStruct Declaration, SyntaxStruct Definition)
+        {
+            if (Definition.IsDefinition)
+            {
+                if (Declaration.IsDefinition)
+                {
+                    Unit.Assembly.Log.LogError(new LogEntry("Type redefinition",
+                        CreateRedefinitionNode(Definition.LocalName,
+                            Definition.DefinitionSyntax.GetSourceLocation(),
+                            Declaration.DefinitionSyntax.GetSourceLocation())));
+                }
+                Declaration.MakeDefinition(Definition);
+            }
+        }
+
         public IType Declare(SyntaxStruct Type)
+        {
+            if (Type.IsAnonymous || Type.IsDefinition)
+            {
+                return DeclareNew(Type);
+            }
+
+            string name = Type.TypeName;
+            if (allStructs.ContainsKey(name))
+            {
+                var result = allStructs[name];
+                DefineStruct(result, Type);
+                return result;
+            }
+
+            return DeclareNew(Type);
+        }
+
+        public IType DeclareNew(SyntaxStruct Type)
         {
             if (Type.IsAnonymous)
             {
@@ -114,22 +147,13 @@ namespace Flame.Syntax.C
             {
                 Unit.DeclareGlobal(Type);
                 structs[name] = Type;
-                allTypes[name] = Type;
+                allStructs[name] = Type;
             }
-            else if (Type.IsDefinition)
+            else
             {
-                var target = structs[name];
-                if (target.IsDefinition)
-                {
-                    Unit.Assembly.Log.LogError(new LogEntry("Type redefinition",
-                        CreateRedefinitionNode(Type.LocalName,
-                            Type.DefinitionSyntax.GetSourceLocation(),
-                            target.DefinitionSyntax.GetSourceLocation())));
-                }
-                target.MakeDefinition(Type);
+                DefineStruct(structs[name], Type);
             }
-            var result = structs[name];
-            return result;
+            return structs[name];
         }
 
         public [IField] LocalFields { const get return fields.Values; }
@@ -138,6 +162,6 @@ namespace Flame.Syntax.C
 
         public [IField] AllFields { const get return allFields.Values; }
         public [IMethod] AllFunctions { const get return allMethods.Values; }
-        public [ICType] AllTypes { const get return allTypes.Values; }
+        public [ICType] AllTypes { const get return allStructs.Values; }
     }
 }

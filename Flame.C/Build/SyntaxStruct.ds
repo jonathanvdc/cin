@@ -20,11 +20,12 @@ namespace Flame.C.Build
             this.Name = GenerateName();
         }
 
-        public const this(set StructDefinitionSyntax DefinitionSyntax,
+        public const this(StructDefinitionSyntax DefinitionSyntax,
             set ICSyntaxState DeclaringState)
         {
             this.DeclarationSyntax = DefinitionSyntax.Declaration;
             this.Name = GenerateName();
+            this.MakeDefinition(DefinitionSyntax);
         }
 
         private const string GenerateName()
@@ -71,6 +72,7 @@ namespace Flame.C.Build
         public void MakeDefinition(StructDefinitionSyntax Body)
         {
             this.DefinitionSyntax = Body;
+            CreateFields();
         }
 
         public const ICSyntaxState GetSyntaxState()
@@ -168,6 +170,29 @@ namespace Flame.C.Build
             return new IProperty[] { };
         }
 
+        private void CreateFields()
+        {
+            var results = new List<IField>();
+            var state = GetSyntaxState();
+            foreach (var item in DefinitionSyntax.Fields)
+            {
+                var type = item.Type.CreateVerifiedType(state);
+                foreach (var fieldDecl in item.Declarations)
+                {
+                    var field = new SyntaxField(type, fieldDecl.Declarator,
+                                                state);
+                    field.DeclaringType = this;
+
+                    if (fieldDecl.Value != null)
+                    {
+                        field.MakeDefinition(fieldDecl.Value.CreateVerifiedExpression(state));
+                    }
+                    results.Add(field);
+                }
+            }
+            cachedFields = results.ToArray();
+        }
+
         private IField[] cachedFields;
         public const IField[] GetFields()
         {
@@ -181,25 +206,7 @@ namespace Flame.C.Build
 
                     return new IField[] { }; // Be somewhat civil
                 }
-                var results = new List<IField>();
-                var state = GetSyntaxState();
-                foreach (var item in DefinitionSyntax.Fields)
-                {
-                    var type = item.Type.CreateVerifiedType(state);
-                    foreach (var fieldDecl in item.Declarations)
-                    {
-                        var field = new SyntaxField(type, fieldDecl.Declarator,
-                                                    state);
-                        field.DeclaringType = this;
-
-                        if (fieldDecl.Value != null)
-                        {
-                            field.MakeDefinition(fieldDecl.Value.CreateVerifiedExpression(state));
-                        }
-                        results.Add(field);
-                    }
-                }
-                cachedFields = results.ToArray();
+                CreateFields();
             }
             return cachedFields;
         }

@@ -18,7 +18,7 @@ double SquareDouble(double Value)
     return Value * Value;
 }
 
-int Test(void)
+struct A Test(void)
 {
     struct A val;
     val.x = 5;

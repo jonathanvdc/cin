@@ -20,6 +20,7 @@ namespace Flame.Syntax.C
             this.Binder = new SyntaxStateBinder(this);
             this.MemberProvider = new MemberProvider(Binder);
             this.declaredVariables = new Stack<Dictionary<string, IVariable>>();
+            this.declarationTypes = new Stack<bool>();
             PushVariableScope();
         }
         public const this(set CompilationUnit DeclaringUnit, set IMethod Method,
@@ -29,6 +30,7 @@ namespace Flame.Syntax.C
         {
             this.Binder = new SyntaxStateBinder(this);
             this.declaredVariables = new Stack<Dictionary<string, IVariable>>();
+            this.declarationTypes = new Stack<bool>();
             PushVariableScope();
         }
 
@@ -132,6 +134,7 @@ namespace Flame.Syntax.C
         private void PushVariableScope()
         {
             this.declaredVariables.Push(new Dictionary<string, IVariable>());
+            PushDeclarationType(false);
         }
 
         public void PushScope()
@@ -142,6 +145,7 @@ namespace Flame.Syntax.C
 
         public IStatement PopScope()
         {
+            PopDeclarationType();
             List<IStatement> statements = new List<IStatement>();
             var scopeVars = declaredVariables.Pop();
             foreach (var item in scopeVars)
@@ -150,6 +154,23 @@ namespace Flame.Syntax.C
             }
             this.Scope = this.Scope.Parent;
             return new BlockStatement(statements.ToArray());
+        }
+
+        private Stack<bool> declarationTypes;
+
+        public bool UseNewDeclarations
+        {
+            const get return declarationTypes.Peek();
+        }
+
+        public void PushDeclarationType(bool UseNewDeclarations)
+        {
+            declarationTypes.Push(UseNewDeclarations);
+        }
+
+        public void PopDeclarationType()
+        {
+            declarationTypes.Pop();
         }
 
         #region Declarations
@@ -161,7 +182,14 @@ namespace Flame.Syntax.C
 
         public IType Declare(SyntaxStruct Type)
         {
-            return Scope.Declare(Type);
+            if (UseNewDeclarations)
+            {
+                return Scope.DeclareNew(Type);
+            }
+            else
+            {
+                return Scope.Declare(Type);
+            }
         }
 
         public IField Declare(SyntaxField Field)

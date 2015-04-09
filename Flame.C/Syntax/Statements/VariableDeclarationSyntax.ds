@@ -54,11 +54,14 @@ namespace Flame.Syntax.C
         public override IStatement CreateStatement(ISyntaxState State)
         {
             var children = new List<IStatement>();
+            var cState = (ICSyntaxState)State;
+            cState.PushDeclarationType(Declarations.Count == 0);
             var elemType = CreateElementType(State);
             foreach (var item in Declarations)
             {
-                children.Add(item.CreateStatement(elemType, State));
+                children.Add(item.CreateStatement(elemType, cState));
             }
+            cState.PopDeclarationType();
             return new BlockStatement(children);
         }
 
