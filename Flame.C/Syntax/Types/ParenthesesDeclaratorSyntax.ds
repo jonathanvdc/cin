@@ -25,6 +25,11 @@ namespace Flame.Syntax.C
                             .Concat(TrailingParentheses.Location);
         }
 
+        public IExpression GetSize(IType ElementType, ICSyntaxState State)
+        {
+            return Declarator.GetSize(ElementType, State);
+        }
+
         public IType CreateType(IType Type, ICSyntaxState State)
         {
             return Declarator.CreateType(Type, State);

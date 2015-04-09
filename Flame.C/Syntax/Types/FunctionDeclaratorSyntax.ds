@@ -4,6 +4,7 @@ using System.Text;
 using System.Linq;
 using Flame.Build;
 using Flame.Compiler;
+using Flame.Compiler.Expressions;
 using Flame.C.Build;
 using Flame.C.Lexer;
 
@@ -23,6 +24,11 @@ namespace Flame.Syntax.C
         {
             const get return Declarator.GetSourceLocation()
                                        .Concat(Parameters.Location);
+        }
+
+        public IExpression GetSize(IType ElementType, ICSyntaxState State)
+        {
+            return new SizeOfExpression(CreateType(ElementType, State));
         }
 
         public IType CreateType(IType Type, ICSyntaxState State)

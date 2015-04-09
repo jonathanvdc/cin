@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 using Flame.Compiler;
+using Flame.Compiler.Expressions;
 using Flame.C.Lexer;
 
 namespace Flame.Syntax.C
@@ -18,6 +19,11 @@ namespace Flame.Syntax.C
         public SourceLocation Location
         {
             const get return Identifier.Location;
+        }
+
+        public IExpression GetSize(IType ElementType, ICSyntaxState State)
+        {
+            return new SizeOfExpression(ElementType);
         }
 
         public IType CreateType(IType Type, ICSyntaxState State)

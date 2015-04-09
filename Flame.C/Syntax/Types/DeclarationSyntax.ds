@@ -19,6 +19,10 @@ namespace Flame.Syntax.C
         {
             return Declarator.CreateType(ElementType.CreateVerifiedType(State), (ICSyntaxState)State);
         }
+        public IExpression GetSize(ISyntaxState State)
+        {
+            return Declarator.GetSize(ElementType.CreateVerifiedType(State), (ICSyntaxState)State);
+        }
 
         public bool IsVariable
         {
