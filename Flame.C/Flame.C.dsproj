@@ -61,6 +61,8 @@
         <Compile Include="Syntax/Expressions/PostfixDeltaSyntax.ds" />
         <Compile Include="Syntax/Expressions/PrefixDeltaSyntax.ds" />
         <Compile Include="Syntax/Expressions/StringSyntax.ds" />
+        <Compile Include="Syntax/Expressions/SizeOfExpressionSyntax.ds" />
+        <Compile Include="Syntax/Expressions/SizeOfTypeSyntax.ds" />
         <Compile Include="Syntax/Expressions/UnaryExpressionSyntax.ds" />
         <Compile Include="Syntax/Expressions/VariableSyntaxBase.ds" />
     </ItemGroup>

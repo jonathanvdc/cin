@@ -1,0 +1,42 @@
+using System;
+using System.Collections.Generic;
+using Flame.Compiler;
+using Flame.Compiler.Expressions;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class SizeOfTypeSyntax : IExpressionSyntax, ISourceSyntax
+    {
+        public const this(set Token SizeOfKeyword, set Token LeadingParentheses,
+                          set DeclarationSyntax Type, set Token TrailingParentheses);
+
+        public Token SizeOfKeyword { const get; private set; }
+        public Token LeadingParentheses { const get; private set; }
+        public DeclarationSyntax Type { const get; private set; }
+        public Token TrailingParentheses { const get; private set; }
+
+        public SourceLocation Location
+        {
+            const get return SizeOfKeyword.Location
+                                .Concat(LeadingParentheses.Location)
+                                .Concat(Type.GetSourceLocation())
+                                .Concat(TrailingParentheses.Location);
+        }
+
+        public IExpression CreateExpression(ISyntaxState State)
+        {
+            return Type.GetSize(State);
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            var cb = new CodeBuilder();
+            cb.Append(SizeOfKeyword.ToString());
+            cb.Append(LeadingParentheses.ToString());
+            cb.Append(Type.GetCode());
+            cb.Append(TrailingParentheses.ToString());
+            return cb;
+        }
+    }
+}

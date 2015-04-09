@@ -100,7 +100,10 @@ namespace Flame.C.Lexer
         FloatKeyword = 108,
         DoubleKeyword = 109,
         VoidKeyword = 110,
-        GenericKeyword = 111
+        GenericKeyword = 111,
+        CaseKeyword = 112,
+        SwitchKeyword = 113,
+        SizeOfKeyword = 114
     }
 
     #endregion

@@ -1,0 +1,121 @@
+using System;
+using System.Collections.Generic;
+using Flame.Compiler;
+using Flame.Compiler.Expressions;
+using Flame.Compiler.Variables;
+using Flame.Compiler.Statements;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class SizeOfExpressionSyntax : IExpressionSyntax, ISourceSyntax
+    {
+        public const this(set Token SizeOfKeyword, set IExpressionSyntax Expression);
+
+        public Token SizeOfKeyword { const get; private set; }
+        public IExpressionSyntax Expression { const get; private set; }
+
+        public SourceLocation Location
+        {
+            const get return SizeOfKeyword.Location
+                                .Concat(Expression.GetSourceLocation());
+        }
+
+        private static const IExpression SizeOfAggregate(IExpression Value)
+        {
+            var type = Value.Type;
+            var length = GetLengthExpression(Value);
+
+            var elemType = type.AsContainerType().GetElementType();
+            if (HasPrimitiveSize(elemType))
+            {
+                return new MultiplyExpression(length, new SizeOfExpression(elemType));
+            }
+            else
+            {
+                var resultVar = new LateBoundVariable(PrimitiveTypes.Int32);
+                var lengthVar = new LateBoundVariable(PrimitiveTypes.Int32);
+                var lengthSetStatement = lengthVar.CreateSetStatement(length);
+                var lengthGetExpr = lengthVar.CreateGetExpression();
+                var zeroExpr = new Int32Expression(0);
+                var elemVar = new ElementVariable(Value, new IExpression[] { zeroExpr });
+                var totalLength = new MultiplyExpression(lengthGetExpr, SizeOf(elemVar.CreateGetExpression()));
+                var ifElse = new IfElseStatement(new GreaterThanExpression(lengthGetExpr, zeroExpr),
+                                resultVar.CreateSetStatement(totalLength),
+                                resultVar.CreateSetStatement(zeroExpr));
+
+                var block = new BlockStatement(new IStatement[]
+                {
+                    lengthSetStatement,
+                    ifElse,
+                    lengthVar.CreateReleaseStatement()
+                });
+
+                return new InitializedExpression(block,
+                    resultVar.CreateGetExpression(),
+                    resultVar.CreateReleaseStatement());
+            }
+        }
+
+        private static const IExpression GetLengthExpression(IExpression Value)
+        {
+            if (Value.Type.IsArray)
+            {
+                return GetArrayLengthExpression(Value);
+            }
+            else
+            {
+                return GetVectorLengthExpression(Value);
+            }
+        }
+
+        private static const IExpression GetArrayLengthExpression(IExpression Value)
+        {
+            var lengthProp = Value.Type.GetProperties().GetProperty("Length", false);
+            var lengthGetter = lengthProp.GetGetAccessor();
+            return new InvocationExpression(lengthGetter, Value, new IExpression[] { });
+        }
+
+        private static const IExpression GetVectorLengthExpression(IExpression Value)
+        {
+            IExpression result = new Int32Expression(1);
+            foreach (var item in Value.Type.AsContainerType().AsVectorType().GetDimensions())
+            {
+                result = new MultiplyExpression(result, new Int32Expression(item));
+            }
+            return result;
+        }
+
+        private static const bool HasPrimitiveSize(IType Type)
+        {
+            return !Type.IsArray && !Type.IsVector;
+        }
+
+        public static const IExpression SizeOf(IExpression Value)
+        {
+            var type = Value.Type;
+            if (!HasPrimitiveSize(type))
+            {
+                return SizeOfAggregate(Value);
+            }
+            else
+            {
+                return new SizeOfExpression(type);
+            }
+        }
+
+        public IExpression CreateExpression(ISyntaxState State)
+        {
+            var expr = Expression.CreateVerifiedExpression(State);
+            return SizeOf(expr);
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            var cb = new CodeBuilder();
+            cb.Append(SizeOfKeyword.ToString());
+            cb.Append(Expression.GetCode());
+            return cb;
+        }
+    }
+}

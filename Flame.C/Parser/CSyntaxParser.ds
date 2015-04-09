@@ -79,6 +79,10 @@ namespace Flame.C.Parser
             {
                 expr = ParseGenericExpression(token, Parser);
             }
+            else if (token.Type == TokenType.SizeOfKeyword)
+            {
+                expr = ParseSizeOfExpression(token, Parser);
+            }
             else
             {
                 Log.LogError(new LogEntry("Parser error", "Could not identify token '" + token.TokenValue + "' as valid expression syntax.", token.Location));
@@ -435,6 +439,37 @@ namespace Flame.C.Parser
             var cases = ParseGenericCaseList(Tokens);
             var lParen = Tokens.NextNoTrivia(TokenType.LParen, Log);
             return new GenericSyntax(GenericKeyword, rParen, expr, comma, cases, lParen);
+        }
+
+        #endregion
+
+        #region ParseSizeOfExpression
+
+        protected virtual IExpressionSyntax ParseSizeOfExpression(Token SizeOfKeyword, ITokenStream Tokens)
+        {
+            if (Tokens.PeekNoTrivia().Type == TokenType.RParen)
+            {
+                var pos = Tokens.CurrentPosition;
+                var rParen = Tokens.NextNoTrivia();
+                var type = ParseDeclaration(Tokens, false, false);
+                if (type == null || Tokens.PeekNoTrivia().Type != TokenType.LParen)
+                {
+                    Tokens.Seek(pos);
+                    return ParseExpressionSizeExpression(SizeOfKeyword, Tokens);
+                }
+                var lParen = Tokens.NextNoTrivia();
+                return new SizeOfTypeSyntax(SizeOfKeyword, rParen, type, lParen);
+            }
+            else
+            {
+                return ParseExpressionSizeExpression(SizeOfKeyword, Tokens);
+            }
+        }
+
+        protected virtual IExpressionSyntax ParseExpressionSizeExpression(Token SizeOfKeyword, ITokenStream Tokens)
+        {
+            var expr = ParseSingleExpression(Tokens);
+            return new SizeOfExpressionSyntax(SizeOfKeyword, expr);
         }
 
         #endregion
