@@ -1,7 +1,7 @@
 # cin (Flame.C)
 ## Flame.C
 Flame.C is an experimental C front-end for the Flame compiler framework, written from the ground up in D#.  
-It is still very much a work in progress. Currently, only the most primitive C features are supported, with basic utilities, like a preprocessor, union types, enums and typedefs still missing.
+It is still very much a work in progress. Currently, only the most primitive C features are supported, with basic utilities, like a preprocessor, union types and enums still missing.
 
 ## cin
 cin is a C compiler that leverages Flame.C and the rest of the Flame framework.
