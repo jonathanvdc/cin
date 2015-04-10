@@ -5,6 +5,7 @@ using Flame.Compiler;
 using Flame.Compiler.Expressions;
 using Flame.Compiler.Statements;
 using Flame.Compiler.Variables;
+using Flame.C.Build;
 using Flame.C.Lexer;
 using Flame.C.Parser;
 
@@ -97,6 +98,13 @@ namespace Flame.Syntax.C
             else
             {
                 exprType = variable.Type;
+                if (!exprType.IsDefined)
+                {
+                    State.Log.LogError(new LogEntry("Forward reference",
+                        "'" + State.TypeNamer.Convert(exprType) + "' is not defined yet, which precludes member access.",
+                        MemberAccessLocation));
+                    return null;
+                }
             }
 
             string name = Member.TokenValue;

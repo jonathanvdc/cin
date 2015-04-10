@@ -133,6 +133,7 @@ namespace Flame.C.Lexer
 			RegisterExample(TokenType.CaseKeyword, "case");
 			RegisterExample(TokenType.SwitchKeyword, "switch");
 			RegisterExample(TokenType.SizeOfKeyword, "sizeof");
+			RegisterExample(TokenType.TypeOfKeyword, "typeof");
 		}
 
 		private Dictionary<TokenType, TokenExample> examples;

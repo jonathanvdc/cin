@@ -17,6 +17,7 @@
   <ItemGroup Name="Build">
       <Compile Include="Build/CBuildHelpers.ds" />
       <Compile Include="Build/CompilationUnit.ds" />
+      <Compile Include="Build/DefinedCheckVisitor.ds" />
       <Compile Include="Build/ICMember.ds" />
       <Compile Include="Build/ICType.ds" />
       <Compile Include="Build/SyntaxAssembly.ds" />
@@ -99,6 +100,8 @@
         <Compile Include="Syntax/Types/StructDeclarationSyntax.ds" />
         <Compile Include="Syntax/Types/StructDefinitionSyntax.ds" />
         <Compile Include="Syntax/Types/TaggedTypeSyntax.ds" />
+        <Compile Include="Syntax/Types/TypeOfDeclarationSyntax.ds" />
+        <Compile Include="Syntax/Types/TypeOfExpressionSyntax.ds" />
     </ItemGroup>
     <Compile Include="Syntax/DeclarationScope.ds" />
     <Compile Include="Syntax/DelimitedList.ds" />

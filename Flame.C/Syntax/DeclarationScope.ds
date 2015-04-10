@@ -113,6 +113,7 @@ namespace Flame.Syntax.C
                             Declaration.DefinitionSyntax.GetSourceLocation())));
                 }
                 Declaration.MakeDefinition(Definition);
+                Declaration.ApplyDefinition();
             }
         }
 
@@ -145,9 +146,9 @@ namespace Flame.Syntax.C
             string name = Type.TypeName;
             if (!structs.ContainsKey(name))
             {
-                Unit.DeclareGlobal(Type);
                 structs[name] = Type;
                 allStructs[name] = Type;
+                Unit.DeclareGlobal(Type);
             }
             else
             {

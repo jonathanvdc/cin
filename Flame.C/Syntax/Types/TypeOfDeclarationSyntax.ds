@@ -1,0 +1,56 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Flame.Compiler;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class TypeOfDeclarationSyntax : ITypeSyntax, ISourceSyntax
+    {
+        public const this(set Token TypeOfKeyword, set Token LeadingParentheses,
+            set DeclarationSyntax Target, set Token TrailingParentheses);
+
+        public Token TypeOfKeyword { const get; private set; }
+        public Token LeadingParentheses { const get; private set; }
+        public DeclarationSyntax Target { const get; private set; }
+        public Token TrailingParentheses { const get; private set; }
+
+        public SourceLocation Location
+        {
+            const get
+            {
+                return TypeOfKeyword.Location
+                            .Concat(LeadingParentheses.Location)
+                            .Concat(Target.GetSourceLocation())
+                            .Concat(TrailingParentheses.Location);
+            }
+        }
+
+        public IType CreateType(ISyntaxState State)
+        {
+            return Target.CreateVerifiedType(State);
+        }
+
+        public override string ToString()
+        {
+            return GetCode().ToString();
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            CodeBuilder cb = new CodeBuilder();
+            cb.Append(TypeOfKeyword.ToString());
+            cb.Append(LeadingParentheses.ToString());
+            cb.Append(Target.GetCode());
+            cb.Append(TrailingParentheses.ToString());
+            return cb;
+        }
+
+        public bool IsVariable
+        {
+            const get return false;
+        }
+    }
+}

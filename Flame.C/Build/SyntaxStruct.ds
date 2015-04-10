@@ -72,7 +72,7 @@ namespace Flame.C.Build
         public void MakeDefinition(StructDefinitionSyntax Body)
         {
             this.DefinitionSyntax = Body;
-            CreateFields();
+            this.cachedFields = null;
         }
 
         public const ICSyntaxState GetSyntaxState()
@@ -170,6 +170,19 @@ namespace Flame.C.Build
             return new IProperty[] { };
         }
 
+        public bool ApplyDefinition()
+        {
+            if (cachedFields == null)
+            {
+                if (!IsDefinition)
+                {
+                    return false;
+                }
+                CreateFields();
+            }
+            return true;
+        }
+
         private void CreateFields()
         {
             var results = new List<IField>();
@@ -196,17 +209,12 @@ namespace Flame.C.Build
         private IField[] cachedFields;
         public const IField[] GetFields()
         {
-            if (cachedFields == null)
+            if (!ApplyDefinition())
             {
-                if (!IsDefinition)
-                {
-                    DeclaringState.Log.LogError(new LogEntry("Forward reference",
-                        "Struct '" + Name + "' is used before it is defined.",
-                        DeclarationSyntax.Location));
-
-                    return new IField[] { }; // Be somewhat civil
-                }
-                CreateFields();
+                /*DeclaringState.Log.LogError(new LogEntry("Forward reference",
+                    "Struct '" + Name + "' is used before it is defined.",
+                    DeclarationSyntax.Location));*/
+                return new IField[] { }; // Keep it civil by returning an array.
             }
             return cachedFields;
         }

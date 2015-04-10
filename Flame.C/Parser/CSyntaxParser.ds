@@ -161,6 +161,10 @@ namespace Flame.C.Parser
             {
                 return ParseStructType(Tokens);
             }
+            else if (peek.Type == TokenType.TypeOfKeyword)
+            {
+                return ParseTypeOfType(Tokens);
+            }
             else if (peek.Type.IsTypeKindToken())
             {
                 return ParseTaggedType(Tokens);
@@ -175,6 +179,38 @@ namespace Flame.C.Parser
             }
             else return null;
         }
+
+        #region ParseSizeOfExpression
+
+        protected virtual ITypeSyntax ParseTypeOfType(ITokenStream Tokens)
+        {
+            var typeOfKeyword = Tokens.NextNoTrivia(TokenType.TypeOfKeyword, Log);
+            if (Tokens.PeekNoTrivia().Type == TokenType.RParen)
+            {
+                var pos = Tokens.CurrentPosition;
+                var rParen = Tokens.NextNoTrivia();
+                var type = ParseDeclaration(Tokens, false, false);
+                if (type == null || Tokens.PeekNoTrivia().Type != TokenType.LParen)
+                {
+                    Tokens.Seek(pos);
+                    return ParseTypeOfExpressionType(typeOfKeyword, Tokens);
+                }
+                var lParen = Tokens.NextNoTrivia();
+                return new TypeOfDeclarationSyntax(typeOfKeyword, rParen, type, lParen);
+            }
+            else
+            {
+                return ParseTypeOfExpressionType(typeOfKeyword, Tokens);
+            }
+        }
+
+        protected virtual ITypeSyntax ParseTypeOfExpressionType(Token TypeOfKeyword, ITokenStream Tokens)
+        {
+            var expr = ParseSingleExpression(Tokens);
+            return new TypeOfExpressionSyntax(TypeOfKeyword, expr);
+        }
+
+        #endregion
 
         public virtual ITypeSyntax ParseType(ITokenStream Tokens)
         {

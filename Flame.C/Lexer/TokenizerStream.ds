@@ -55,6 +55,8 @@ namespace Flame.C.Lexer
 			this.keywords["case"] = TokenType.CaseKeyword;
 			this.keywords["switch"] = TokenType.SwitchKeyword;
 			this.keywords["sizeof"] = TokenType.SizeOfKeyword;
+			this.keywords["typeof"] = TokenType.TypeOfKeyword;
+			this.keywords["__typeof__"] = TokenType.TypeOfKeyword;
 
 			this.operators1 = new Dictionary<char, TokenType>();
 			this.operators1[';'] = TokenType.Semicolon;

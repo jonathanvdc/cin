@@ -23,7 +23,7 @@ namespace Flame.Syntax.C
 
         public override const IVariable GetCallerVariable(ISyntaxState State)
         {
-            return new AtAddressVariable(Target.CreateExpression(State));
+            return new AtAddressVariable(Target.CreateVerifiedExpression(State));
         }
     }
 }

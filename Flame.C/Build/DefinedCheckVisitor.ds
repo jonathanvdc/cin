@@ -1,0 +1,45 @@
+
+using Flame.Build;
+using Flame.Compiler;
+
+namespace Flame.C.Build
+{
+    public static class DefinedCheckVisitor : TypeConverterBase<bool>
+    {
+        public const this();
+
+        protected override const bool ConvertTypeDefault(IType Type)
+        {
+            if (Type is ICType)
+            {
+                return ((ICType)Type).IsDefinition;
+            }
+            else return true;
+        }
+
+        protected override const bool MakeArrayType(bool ElementType, int ArrayRank)
+        {
+            return ElementType;
+        }
+
+        protected override const bool MakeGenericType(bool GenericDeclaration, [bool] TypeArguments)
+        {
+            return GenericDeclaration;
+        }
+
+        protected override const bool ConvertPointerType(IPointerType Type)
+        {
+            return true;
+        }
+
+        protected override const bool MakePointerType(bool ElementType, PointerKind Kind)
+        {
+            return true;
+        }
+
+        protected override const bool MakeVectorType(bool ElementType, int[] Dimensions)
+        {
+            return ElementType;
+        }
+    }
+}

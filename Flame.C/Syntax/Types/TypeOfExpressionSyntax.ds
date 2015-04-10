@@ -1,0 +1,49 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Flame.Compiler;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class TypeOfExpressionSyntax : ITypeSyntax, ISourceSyntax
+    {
+        public const this(set Token TypeOfKeyword, set IExpressionSyntax Target);
+
+        public Token TypeOfKeyword { const get; private set; }
+        public IExpressionSyntax Target { const get; private set; }
+
+        public SourceLocation Location
+        {
+            const get
+            {
+                return TypeOfKeyword.Location.Concat(Target.GetSourceLocation());
+            }
+        }
+
+        public IType CreateType(ISyntaxState State)
+        {
+            var expr = Target.CreateVerifiedExpression(State);
+            return expr.Type;
+        }
+
+        public override string ToString()
+        {
+            return GetCode().ToString();
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            CodeBuilder cb = new CodeBuilder();
+            cb.Append(TypeOfKeyword.ToString());
+            cb.Append(Target.GetCode());
+            return cb;
+        }
+
+        public bool IsVariable
+        {
+            const get return false;
+        }
+    }
+}

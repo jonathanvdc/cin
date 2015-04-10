@@ -12,5 +12,10 @@ namespace Flame.C.Build
         {
             const get return Type.LocalName == null;
         }
+
+        public static bool IsDefined[this IType Type]
+        {
+            const get return DefinedCheckVisitor.Convert(Type);
+        }
     }
 }

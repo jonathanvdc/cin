@@ -5,6 +5,7 @@ using Flame.Compiler.Variables;
 using Flame.Compiler.Statements;
 using Flame.Compiler.Expressions;
 using Flame.C;
+using Flame.C.Build;
 using Flame.C.Lexer;
 
 namespace Flame.Syntax.C
@@ -66,8 +67,19 @@ namespace Flame.Syntax.C
             {
                 if (ElementType == null)
                 {
-                    State.Log.LogError(new LogEntry("Type inference error", "Could not infer type in variable declaration '" + this.GetCode().Trim().ToString() + "' as the variable was not initialized with an expression", Location));
+                    State.Log.LogError(new LogEntry("Type inference error",
+                        "Could not infer type in variable declaration '" + this.GetCode().Trim().ToString() + "' as the variable was not initialized with an expression",
+                        Location));
                 }
+                else if (!ElementType.IsDefined)
+                {
+                    State.Log.LogWarning(new LogEntry("Variable of undefined type",
+                        "A variable of incomplete type '" + State.TypeNamer.Convert(ElementType) + "' is declared. " +
+                        "This is not allowed by the C standard, though cin allows it if said type is completed " +
+                        "before its definition is required.",
+                        Location));
+                }
+
                 return State.DeclareVariable(Declarator.Name, Declarator.CreateType(ElementType, (ICSyntaxState)State));
             }
             else
@@ -80,9 +92,20 @@ namespace Flame.Syntax.C
                 {
                 	type = val.Type;
                 }
-                else if (CastSyntax.UseImplicitCast(State, val.Type, type))
+                else
                 {
-                	val = new ExpressionVariable(CastSyntax.CreateImplicitCast(State, val.CreateGetExpression(), Value, type));
+                    if (!type.IsDefined)
+                    {
+                        State.Log.LogError(new LogEntry("Variable of undefined type",
+                            "Declaring and assigning a variable of incomplete type '" + State.TypeNamer.Convert(type) + "' " +
+                            "requires a well-defined type.",
+                            Location));
+                    }
+
+                    if (CastSyntax.UseImplicitCast(State, val.Type, type))
+                    {
+                    	val = new ExpressionVariable(CastSyntax.CreateImplicitCast(State, val.CreateGetExpression(), Value, type));
+                    }
                 }
 
                 var variable = State.DeclareVariable(Declarator.Name, Declarator.CreateType(type, (ICSyntaxState)State));
