@@ -211,7 +211,12 @@ namespace Flame.Syntax.C
 
         public IType Declare(SyntaxTypedef Typedef)
         {
-            return Scope.Declare(Typedef);
+            var result = Scope.Declare(Typedef);
+            if (Typedef.Type is IRenamableType)
+            {
+                DeclaringUnit.Assembly.SuggestRename((IRenamableType)Typedef.Type, Typedef.Name);
+            }
+            return result;
         }
 
         #endregion
