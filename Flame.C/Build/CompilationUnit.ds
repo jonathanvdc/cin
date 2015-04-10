@@ -46,7 +46,7 @@ namespace Flame.C.Build
             Assembly.DeclareGlobal(Field);
         }
 
-        public void DeclareGlobal(SyntaxStruct Type)
+        public void DeclareGlobal(IRenamableType Type)
         {
             Assembly.RenameGlobal(Type);
             allTypes.Add((IType)Type);

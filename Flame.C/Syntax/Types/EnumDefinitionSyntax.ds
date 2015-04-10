@@ -1,0 +1,65 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Flame.Compiler;
+using Flame.C.Build;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+	public class EnumDefinitionSyntax : ITypeSyntax, ISourceSyntax
+	{
+		public const this(set EnumDeclarationSyntax Declaration,
+            set Token LeadingBraces, set SeparatedList<SingleVariableDeclaration> Values,
+            set Token TrailingBraces);
+
+		public EnumDeclarationSyntax Declaration { const get; private set; }
+        public Token LeadingBraces { const get; private set; }
+        public SeparatedList<SingleVariableDeclaration> Values { const get; private set; }
+        public Token TrailingBraces { const get; private set; }
+
+		public SourceLocation Location
+		{
+            const get
+            {
+                return Declaration.Location
+						.Concat(LeadingBraces.Location)
+						.Concat(Values.Location)
+	                    .Concat(TrailingBraces.Location);
+            }
+		}
+
+        public string TypeName
+        {
+        	const get return Declaration.TypeName;
+        }
+
+        public IType CreateType(ISyntaxState State)
+        {
+            var cState = (ICSyntaxState)State;
+        	var enumType = new SyntaxEnum(this, cState);
+            return cState.Declare(enumType);
+        }
+
+        public override string ToString()
+        {
+            return GetCode().ToString();
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            CodeBuilder cb = new CodeBuilder();
+            cb.Append(Declaration.GetCode());
+            cb.Append(LeadingBraces.ToString());
+            cb.Append(Values.GetCode());
+            cb.Append(TrailingBraces.ToString());
+            return cb;
+        }
+
+        public bool IsVariable
+        {
+            const get return false;
+        }
+	}
+}

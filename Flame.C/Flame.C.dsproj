@@ -21,6 +21,8 @@
       <Compile Include="Build/ICMember.ds" />
       <Compile Include="Build/ICType.ds" />
       <Compile Include="Build/SyntaxAssembly.ds" />
+      <Compile Include="Build/SyntaxEnum.ds" />
+      <Compile Include="Build/SyntaxEnumLiteral.ds" />
       <Compile Include="Build/SyntaxField.ds" />
       <Compile Include="Build/SyntaxFunction.ds" />
       <Compile Include="Build/SyntaxStruct.ds" />
@@ -92,6 +94,8 @@
     </ItemGroup>
     <ItemGroup Name="Types">
         <Compile Include="Syntax/Types/ArrayDeclaratorSyntax.ds" />
+        <Compile Include="Syntax/Types/EnumDeclarationSyntax.ds" />
+        <Compile Include="Syntax/Types/EnumDefinitionSyntax.ds" />
         <Compile Include="Syntax/Types/EmptyDeclaratorSyntax.ds" />
         <Compile Include="Syntax/Types/FunctionDeclaratorSyntax.ds" />
         <Compile Include="Syntax/Types/DeclarationSyntax.ds" />

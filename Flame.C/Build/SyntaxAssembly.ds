@@ -62,7 +62,7 @@ namespace Flame.C.Build
                 ((SyntaxFunction)preExisting).MakeDefinition(Method);
             }
         }
-        public void RenameGlobal(SyntaxStruct Type)
+        public void RenameGlobal(IRenamableType Type)
         {
             string fullName = Type.FullName;
 
@@ -77,7 +77,7 @@ namespace Flame.C.Build
                 index++;
             }
 
-            Type.Name = Type.Name + (string)index;
+            Type.Rename(Type.Name + (string)index);
         }
 
         public string FullName { const get return Name; }

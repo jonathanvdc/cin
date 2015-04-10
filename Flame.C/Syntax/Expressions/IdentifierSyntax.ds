@@ -23,6 +23,19 @@ namespace Flame.Syntax.C
         	const get return Identifier.Location;
         }
 
+        private static const IField GetEnumField(string Name, ISyntaxState State)
+        {
+            foreach (var item in ((ICSyntaxState)State).Scope.AllEnumTypes)
+            {
+                foreach (var field in item.GetFields())
+                    if (field.Name.Equals(Name))
+                {
+                    return field;
+                }
+            }
+            return null;
+        }
+
         public override const IVariable CreateVariable(ISyntaxState State)
         {
             string name = Identifier.TokenValue;
@@ -37,9 +50,13 @@ namespace Flame.Syntax.C
             if (field != null)
                 return new FieldVariable(field, null);
 
-            var method = Enumerable.Single<IMethod>(Enumerable.OfType<IMethod>(members));
+            var method = Enumerable.SingleOrDefault<IMethod>(Enumerable.OfType<IMethod>(members));
             if (method != null)
                 return new ExpressionVariable(new GetMethodExpression(method, null));
+
+            var enumField = GetEnumField(name, State);
+            if (enumField != null)
+                return new FieldVariable(enumField, null);
 
             return null;
         }

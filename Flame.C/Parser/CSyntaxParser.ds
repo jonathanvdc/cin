@@ -134,6 +134,36 @@ namespace Flame.C.Parser
 
         #endregion
 
+        #region ParseEnumDefinitionSyntax
+
+        protected virtual ITypeSyntax ParseEnumDefinitionSyntax(EnumDeclarationSyntax Declaration, ITokenStream Tokens)
+        {
+            var leadingBraces = Tokens.NextNoTrivia(TokenType.RBraces, Log);
+            var fields = new List<SeparatedItem<SingleVariableDeclaration>>();
+            var peek = Tokens.PeekNoTrivia();
+            var separator = Token.Undefined;
+            while (peek.Type != TokenType.EndOfFile && peek.Type != TokenType.LBraces)
+            {
+                fields.Add(new SeparatedItem<SingleVariableDeclaration>(separator, ParseSingleVariableDeclaration(Tokens)));
+                peek = Tokens.PeekNoTrivia();
+                if (peek.Type != TokenType.LBraces)
+                {
+                    separator = Tokens.NextNoTrivia(TokenType.Comma, Log);
+                    peek = Tokens.PeekNoTrivia();
+                }
+                else
+                {
+                    separator = Token.Undefined;
+                }
+            }
+            var values = new SeparatedList<SingleVariableDeclaration>(fields);
+            var trailingBraces = Tokens.NextNoTrivia(TokenType.LBraces, Log);
+            return new EnumDefinitionSyntax(Declaration,
+                leadingBraces, values, trailingBraces);
+        }
+
+        #endregion
+
         protected virtual ITypeSyntax ParseStructType(ITokenStream Tokens)
         {
             var structKeyword = Tokens.NextNoTrivia(TokenType.StructKeyword, Log);
@@ -154,12 +184,36 @@ namespace Flame.C.Parser
             }
         }
 
+        protected virtual ITypeSyntax ParseEnumType(ITokenStream Tokens)
+        {
+            var enumKeyword = Tokens.NextNoTrivia(TokenType.EnumKeyword, Log);
+            if (Tokens.PeekNoTrivia().Type == TokenType.RBraces)
+            {
+                var declSyntax = new EnumDeclarationSyntax(enumKeyword, Token.Undefined);
+                return ParseEnumDefinitionSyntax(declSyntax, Tokens);
+            }
+            else
+            {
+                var ident = Tokens.NextNoTrivia(TokenType.Identifier, Log);
+                var declSyntax = new EnumDeclarationSyntax(enumKeyword, ident);
+
+                if (Tokens.PeekNoTrivia().Type == TokenType.RBraces)
+                    return ParseEnumDefinitionSyntax(declSyntax, Tokens);
+                else
+                    return declSyntax;
+            }
+        }
+
         public virtual ITypeSyntax ParseType(ITokenStream Tokens, bool MustParse)
         {
             var peek = Tokens.PeekNoTrivia();
             if (peek.Type == TokenType.StructKeyword)
             {
                 return ParseStructType(Tokens);
+            }
+            else if (peek.Type == TokenType.EnumKeyword)
+            {
+                return ParseEnumType(Tokens);
             }
             else if (peek.Type == TokenType.TypeOfKeyword)
             {
@@ -978,42 +1032,41 @@ namespace Flame.C.Parser
 
         #region ParseDeclarationStatement
 
+        protected virtual SingleVariableDeclaration ParseSingleVariableDeclaration(IDeclaratorSyntax Declarator, ITokenStream Tokens)
+        {
+            if (Tokens.PeekNoTrivia().Type == TokenType.Equals)
+            {
+                var opAssign = Tokens.NextNoTrivia(TokenType.Equals, Log);
+                var val = ParseExpression(Tokens);
+                return new SingleVariableDeclaration(Declarator, opAssign, val);
+            }
+            else
+            {
+                return new SingleVariableDeclaration(Declarator);
+            }
+        }
+
+        protected virtual SingleVariableDeclaration ParseSingleVariableDeclaration(ITokenStream Tokens)
+        {
+            var declarator = ParseDeclarator(Tokens, true);
+            return ParseSingleVariableDeclaration(declarator, Tokens);
+        }
+
         protected virtual VariableDeclarationSyntax ParseDeclarationStatement(DeclarationSyntax Declaration, ITokenStream Tokens)
         {
             var elemType = Declaration.ElementType;
             var declList = new List<SeparatedItem<SingleVariableDeclaration>>();
             if (!string.IsNullOrWhiteSpace(Declaration.Declarator.Name))
             {
-                if (Tokens.PeekNoTrivia().Type == TokenType.Equals)
-                {
-                    var opAssign = Tokens.NextNoTrivia(TokenType.Equals, Log);
-                    var val = ParseExpression(Tokens);
-                    var firstDecl = new SingleVariableDeclaration(Declaration.Declarator, opAssign, val);
-                    declList.Add(new SeparatedItem<SingleVariableDeclaration>(firstDecl));
-                }
-                else
-                {
-                    var firstDecl = new SingleVariableDeclaration(Declaration.Declarator);
-                    declList.Add(new SeparatedItem<SingleVariableDeclaration>(firstDecl));
-                }
+                var firstDecl = ParseSingleVariableDeclaration(Declaration.Declarator, Tokens);
+                declList.Add(new SeparatedItem<SingleVariableDeclaration>(firstDecl));
             }
 
             while (Tokens.PeekNoTrivia().Type == TokenType.Comma)
             {
                 var separator = Tokens.NextNoTrivia(TokenType.Comma, Log);
-                var declarator = ParseDeclarator(Tokens, true);
-                if (Tokens.PeekNoTrivia().Type == TokenType.Equals)
-                {
-                    var opAssign = Tokens.NextNoTrivia(TokenType.Equals, Log);
-                    var val = ParseExpression(Tokens);
-                    var decl = new SingleVariableDeclaration(declarator, opAssign, val);
-                    declList.Add(new SeparatedItem<SingleVariableDeclaration>(separator, decl));
-                }
-                else
-                {
-                    var decl = new SingleVariableDeclaration(declarator);
-                    declList.Add(new SeparatedItem<SingleVariableDeclaration>(separator, decl));
-                }
+                var decl = ParseSingleVariableDeclaration(Tokens);
+                declList.Add(new SeparatedItem<SingleVariableDeclaration>(separator, decl));
             }
 
             var semicolon = Tokens.NextNoTrivia(TokenType.Semicolon, Log);

@@ -12,15 +12,15 @@ using Flame.Syntax.C;
 
 namespace Flame.C.Build
 {
-    public class SyntaxStruct : IDefinableType<StructDefinitionSyntax>
+    public class SyntaxEnum : IDefinableType<EnumDefinitionSyntax>
     {
-        public const this(set StructDeclarationSyntax DeclarationSyntax,
+        public const this(set EnumDeclarationSyntax DeclarationSyntax,
             set ICSyntaxState DeclaringState)
         {
             this.Name = GenerateName();
         }
 
-        public const this(StructDefinitionSyntax DefinitionSyntax,
+        public const this(EnumDefinitionSyntax DefinitionSyntax,
             set ICSyntaxState DeclaringState)
         {
             this.DeclarationSyntax = DefinitionSyntax.Declaration;
@@ -33,11 +33,11 @@ namespace Flame.C.Build
             string tName = TypeName;
             if (!string.IsNullOrWhiteSpace(tName))
                 return tName;
-            else return "anonymous_struct";
+            else return "anonymous_enum";
         }
 
-        public StructDeclarationSyntax DeclarationSyntax { const get; private set; }
-        public StructDefinitionSyntax DefinitionSyntax { const get; private set; }
+        public EnumDeclarationSyntax DeclarationSyntax { const get; private set; }
+        public EnumDefinitionSyntax DefinitionSyntax { const get; private set; }
         public ICSyntaxState DeclaringState { const get; private set; }
         public INamespace DeclaringNamespace { const get return DeclaringState.DeclaringUnit; }
         public string Name { const get; set; }
@@ -69,15 +69,16 @@ namespace Flame.C.Build
             const get return DefinitionSyntax != null;
         }
 
-        public void MakeDefinition(SyntaxStruct Other)
+        public void MakeDefinition(SyntaxEnum Other)
         {
             MakeDefinition(Other.DefinitionSyntax);
         }
 
-        public void MakeDefinition(StructDefinitionSyntax Body)
+        public void MakeDefinition(EnumDefinitionSyntax Body)
         {
             this.DefinitionSyntax = Body;
             this.cachedFields = null;
+            this.enumType = null;
         }
 
         public const ICSyntaxState GetSyntaxState()
@@ -99,7 +100,7 @@ namespace Flame.C.Build
             return new IAttribute[]
             {
                 new AccessAttribute(AccessModifier.Public),
-                PrimitiveAttributes.ValueTypeAttribute
+                PrimitiveAttributes.EnumAttribute
             };
         }
 
@@ -155,9 +156,48 @@ namespace Flame.C.Build
 
         #region Members
 
+        private IType enumType;
+        public const IType UnderlyingType
+        {
+            const get
+            {
+                if (enumType == null)
+                {
+                    if (!IsDefinition)
+                    {
+                        enumType = PrimitiveTypes.Int64;
+                    }
+                    else
+                    {
+                        int maxMag = 1;
+                        IType chosenType = PrimitiveTypes.Int8;
+                        foreach (var item in Fields)
+                        {
+                            var type = ((SyntaxEnumLiteral)item).PreferredUnderlyingType;
+                            int mag = type.GetPrimitiveMagnitude();
+                            if (mag > maxMag)
+                            {
+                                maxMag = mag;
+                                chosenType = type;
+                            }
+                        }
+                        enumType = chosenType;
+                    }
+                }
+                return enumType;
+            }
+        }
+
         public const IType[] GetBaseTypes()
         {
-            return new IType[] { };
+            if (!IsDefinition)
+            {
+                return new IType[] { };
+            }
+            else
+            {
+                return new IType[] { UnderlyingType };
+            }
         }
 
         public const IMethod[] GetMethods()
@@ -192,21 +232,10 @@ namespace Flame.C.Build
         {
             var results = new List<IField>();
             var state = GetSyntaxState();
-            foreach (var item in DefinitionSyntax.Fields)
+            var vals = DefinitionSyntax.Values;
+            for (int i = 0; i < vals.Count; i++)
             {
-                var type = item.Type.CreateVerifiedType(state);
-                foreach (var fieldDecl in item.Declarations)
-                {
-                    var field = new SyntaxField(type, fieldDecl.Declarator,
-                                                state);
-                    field.DeclaringType = this;
-
-                    if (fieldDecl.Value != null)
-                    {
-                        field.MakeDefinition(fieldDecl.Value.CreateVerifiedExpression(state));
-                    }
-                    results.Add(field);
-                }
+                results.Add(new SyntaxEnumLiteral(this, vals[i], i));
             }
             cachedFields = results.ToArray();
         }
@@ -216,9 +245,6 @@ namespace Flame.C.Build
         {
             if (!ApplyDefinition())
             {
-                /*DeclaringState.Log.LogError(new LogEntry("Forward reference",
-                    "Struct '" + Name + "' is used before it is defined.",
-                    DeclarationSyntax.Location));*/
                 return new IField[] { }; // Keep it civil by returning an array.
             }
             return cachedFields;

@@ -1,0 +1,109 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Flame.Build;
+using Flame.Compiler;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Expressions;
+using Flame.C.Lexer;
+using Flame.Syntax;
+using Flame.Syntax.C;
+
+namespace Flame.C.Build
+{
+    public class SyntaxEnumLiteral : IField, IInitializedField
+    {
+        public const this(set SyntaxEnum EnumType,
+            set SingleVariableDeclaration DeclarationSyntax,
+            set int Index);
+
+        public SyntaxEnum EnumType { const get; private set; }
+        public SingleVariableDeclaration DeclarationSyntax { const get; private set; }
+        public int Index { const get; private set; }
+
+        public ICSyntaxState DeclaringState { const get return EnumType.DeclaringState; }
+        public IType DeclaringType { const get return EnumType; }
+
+        public bool IsStatic { const get return true; }
+
+        private IExpression cachedValue;
+        public IExpression Value { const get return GetValue(); }
+
+        public IType PreferredUnderlyingType
+        {
+            const get
+            {
+                if (DeclarationSyntax.Value != null)
+                {
+                    return DeclarationSyntax.Value.CreateVerifiedExpression(DeclaringState).Type;
+                }
+                else if (Index <= int8.MaxValue && Index >= int8.MinValue)
+                {
+                    return PrimitiveTypes.Int8;
+                }
+                else if (Index <= int16.MaxValue && Index >= int16.MinValue)
+                {
+                    return PrimitiveTypes.Int16;
+                }
+                else
+                {
+                    return PrimitiveTypes.Int32;
+                }
+            }
+        }
+
+        public const IExpression GetValue()
+        {
+            if (cachedValue == null)
+            {
+                IExpression innerVal;
+                if (DeclarationSyntax.Value != null)
+                {
+                    innerVal = DeclarationSyntax.Value.CreateVerifiedExpression(DeclaringState);
+                }
+                else if (Index <= int8.MaxValue && Index >= int8.MinValue)
+                {
+                    innerVal = new Int8Expression((int8)Index);
+                }
+                else if (Index <= int16.MaxValue && Index >= int16.MinValue)
+                {
+                    innerVal = new Int16Expression((int16)Index);
+                }
+                else
+                {
+                    innerVal = new Int32Expression(Index);
+                }
+                cachedValue = new ConversionExpression(innerVal, EnumType.UnderlyingType);
+            }
+            return cachedValue;
+        }
+
+        public bool IsDefinition
+        {
+            const get return true;
+        }
+
+        public string Name
+        {
+            const get return DeclarationSyntax.Name;
+        }
+        public string FullName
+        {
+            const get
+            {
+                if (EnumType == null) return Name;
+                else return MemberExtensions.CombineNames(EnumType.FullName, Name);
+            }
+        }
+
+        public IType FieldType
+        {
+            const get return EnumType;
+        }
+
+        public const [IAttribute] GetAttributes()
+        {
+            return new IAttribute[] { new AccessAttribute(AccessModifier.Public) };
+        }
+    }
+}

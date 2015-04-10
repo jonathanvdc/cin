@@ -192,6 +192,18 @@ namespace Flame.Syntax.C
             }
         }
 
+        public IType Declare(SyntaxEnum Type)
+        {
+            if (UseNewDeclarations)
+            {
+                return Scope.DeclareNew(Type);
+            }
+            else
+            {
+                return Scope.Declare(Type);
+            }
+        }
+
         public IField Declare(SyntaxField Field)
         {
             return Scope.Declare(Field);

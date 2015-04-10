@@ -35,7 +35,7 @@ namespace Flame.Syntax.C
                 if (typedefDecl.Value != null)
                 {
                     State.Log.LogError(new LogEntry("Assignment to typedef type identifier.",
-                        "Assignment to typedef type identifiers is meaningless.",
+                        "Assignment to a typedef identifier is meaningless.",
                         typedefDecl.AssignmentLocation));
                 }
 

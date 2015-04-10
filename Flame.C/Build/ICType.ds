@@ -6,6 +6,19 @@ namespace Flame.C.Build
         string LocalName { const get; }
     }
 
+    public interface IRenamableType : ICType
+    {
+        void Rename(string Name);
+        string TypeName { const get; }
+    }
+
+    public interface IDefinableType<TSyntax> : IRenamableType
+    {
+        TSyntax DefinitionSyntax { const get; }
+        void MakeDefinition(TSyntax DefinitionSyntax);
+        bool ApplyDefinition();
+    }
+
     public static class CTypeExtensions
     {
         public static bool IsAnonymous[this ICType Type]

@@ -15,22 +15,28 @@ namespace Flame.Syntax.C
             methods = new Dictionary<string, SyntaxFunction>();
             fields = new Dictionary<string, SyntaxField>();
             structs = new Dictionary<string, SyntaxStruct>();
+            enums = new Dictionary<string, SyntaxEnum>();
             typedefs = new Dictionary<string, SyntaxTypedef>();
             allMethods = new Dictionary<string, IMethod>();
             allFields = new Dictionary<string, IField>();
             allStructs = new Dictionary<string, SyntaxStruct>();
+            allEnums = new Dictionary<string, SyntaxEnum>();
             allTypedefs = new Dictionary<string, SyntaxTypedef>();
+            anonymousEnums = new List<SyntaxEnum>();
         }
         public const this(set CompilationUnit Unit, set DeclarationScope Parent)
         {
             methods = new Dictionary<string, SyntaxFunction>();
             fields = new Dictionary<string, SyntaxField>();
             structs = new Dictionary<string, SyntaxStruct>();
+            enums = new Dictionary<string, SyntaxEnum>();
             typedefs = new Dictionary<string, SyntaxTypedef>();
             allMethods = new Dictionary<string, IMethod>(Parent.allMethods);
             allFields = new Dictionary<string, IField>(Parent.allFields);
             allStructs = new Dictionary<string, SyntaxStruct>(Parent.allStructs);
+            allEnums = new Dictionary<string, SyntaxEnum>(Parent.allEnums);
             allTypedefs = new Dictionary<string, SyntaxTypedef>(Parent.allTypedefs);
+            anonymousEnums = new List<SyntaxEnum>(Parent.anonymousEnums);
         }
 
         public CompilationUnit Unit { const get; private set; }
@@ -41,11 +47,14 @@ namespace Flame.Syntax.C
         private Dictionary<string, SyntaxFunction> methods;
         private Dictionary<string, SyntaxField> fields;
         private Dictionary<string, SyntaxStruct> structs;
+        private Dictionary<string, SyntaxEnum> enums;
         private Dictionary<string, SyntaxTypedef> typedefs;
         private Dictionary<string, IField> allFields;
         private Dictionary<string, IMethod> allMethods;
         private Dictionary<string, SyntaxStruct> allStructs;
+        private Dictionary<string, SyntaxEnum> allEnums;
         private Dictionary<string, SyntaxTypedef> allTypedefs;
+        private List<SyntaxEnum> anonymousEnums;
 
         public static const IMarkupNode CreateRedefinitionNode(string Name,
             SourceLocation NewDefinition, SourceLocation OldDefinition)
@@ -107,7 +116,8 @@ namespace Flame.Syntax.C
             return fields[name];
         }
 
-        private void DefineStruct(SyntaxStruct Declaration, SyntaxStruct Definition)
+        private void Define<T>(IDefinableType<T> Declaration, IDefinableType<T> Definition)
+            where T : ISyntaxNode
         {
             if (Definition.IsDefinition)
             {
@@ -118,30 +128,34 @@ namespace Flame.Syntax.C
                             Definition.DefinitionSyntax.GetSourceLocation(),
                             Declaration.DefinitionSyntax.GetSourceLocation())));
                 }
-                Declaration.MakeDefinition(Definition);
+                Declaration.MakeDefinition(Definition.DefinitionSyntax);
                 Declaration.ApplyDefinition();
             }
         }
 
-        public IType Declare(SyntaxStruct Type)
+        private T DeclareGeneric<T, TSyntax>(T Type, Dictionary<string, T> Locals, Dictionary<string, T> Globals)
+            where TSyntax : ISyntaxNode
+            where T : IRenamableType
         {
             if (Type.IsAnonymous || Type.IsDefinition)
             {
-                return DeclareNew(Type);
+                return DeclareNew<T, TSyntax>(Type, Locals, Globals);
             }
 
             string name = Type.TypeName;
-            if (allStructs.ContainsKey(name))
+            if (Globals.ContainsKey(name))
             {
-                var result = allStructs[name];
-                DefineStruct(result, Type);
+                var result = Globals[name];
+                this.Define<TSyntax>((IDefinableType<TSyntax>)result, (IDefinableType<TSyntax>)Type);
                 return result;
             }
 
-            return DeclareNew(Type);
+            return this.DeclareNew<T, TSyntax>(Type, Locals, Globals);
         }
 
-        public IType DeclareNew(SyntaxStruct Type)
+        private T DeclareNew<T, TSyntax>(T Type, Dictionary<string, T> Locals, Dictionary<string, T> Globals)
+            where TSyntax : ISyntaxNode
+            where T : IRenamableType
         {
             if (Type.IsAnonymous)
             {
@@ -150,17 +164,49 @@ namespace Flame.Syntax.C
             }
 
             string name = Type.TypeName;
-            if (!structs.ContainsKey(name))
+            if (!Locals.ContainsKey(name))
             {
-                structs[name] = Type;
-                allStructs[name] = Type;
+                Locals[name] = Type;
+                Globals[name] = Type;
                 Unit.DeclareGlobal(Type);
             }
             else
             {
-                DefineStruct(structs[name], Type);
+                this.Define<TSyntax>((IDefinableType<TSyntax>)Locals[name], (IDefinableType<TSyntax>)Type);
             }
-            return structs[name];
+            return Locals[name];
+        }
+
+        public SyntaxStruct Declare(SyntaxStruct Type)
+        {
+            return this.DeclareGeneric<SyntaxStruct, StructDefinitionSyntax>(Type, structs, allStructs);
+        }
+
+        public SyntaxEnum Declare(SyntaxEnum Type)
+        {
+            if (Type.IsAnonymous)
+            {
+                return DeclareNew(Type);
+            }
+
+            return this.DeclareGeneric<SyntaxEnum, EnumDefinitionSyntax>(Type, enums, allEnums);
+        }
+
+        public SyntaxStruct DeclareNew(SyntaxStruct Type)
+        {
+            return this.DeclareNew<SyntaxStruct, StructDefinitionSyntax>(Type, structs, allStructs);
+        }
+
+        public SyntaxEnum DeclareNew(SyntaxEnum Type)
+        {
+            if (Type.IsAnonymous)
+            {
+                Unit.DeclareGlobal(Type);
+                anonymousEnums.Add(Type);
+                return Type;
+            }
+
+            return this.DeclareNew<SyntaxEnum, EnumDefinitionSyntax>(Type, enums, allEnums);
         }
 
         public IType Declare(SyntaxTypedef Typedef)
@@ -191,15 +237,28 @@ namespace Flame.Syntax.C
         public [ICType] LocalTypes
         {
             const get
-                return Enumerable.Concat<ICType>(structs.Values, typedefs.Values);
+                return Enumerable.Concat<ICType>(
+                        Enumerable.Concat<ICType>(
+                            structs.Values,
+                            enums.Values),
+                            typedefs.Values);
         }
 
         public [IField] AllFields { const get return allFields.Values; }
         public [IMethod] AllFunctions { const get return allMethods.Values; }
+        public [ICType] AllEnumTypes
+        {
+            const get
+                return Enumerable.Concat<ICType>(allEnums.Values, anonymousEnums); 
+        }
         public [ICType] AllTypes
         {
             const get
-                return Enumerable.Concat<ICType>(allStructs.Values, allTypedefs.Values);
+            return Enumerable.Concat<ICType>(
+                    Enumerable.Concat<ICType>(
+                        allStructs.Values,
+                        allEnums.Values),
+                        allTypedefs.Values);
         }
     }
 }

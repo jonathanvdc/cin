@@ -14,6 +14,7 @@ namespace Flame.Syntax.C
 
         IMethod Declare(SyntaxFunction Method);
         IType Declare(SyntaxStruct Type);
+        IType Declare(SyntaxEnum Type);
         IType Declare(SyntaxTypedef Type);
         IField Declare(SyntaxField Field);
     }
