@@ -935,6 +935,8 @@ namespace Flame.C.Parser
                 return ParseDoWhileStatement(Tokens);
             else if (tokenType == TokenType.ForKeyword)
                 return ParseForStatement(Tokens);
+            else if (tokenType == TokenType.TypedefKeyword)
+                return new DeclarationStatementSyntax(ParseTypedefDeclaration(Tokens));
             else
                 return ParseExpressionStatement(Tokens);
         }
@@ -1193,16 +1195,34 @@ namespace Flame.C.Parser
 
         #endregion
 
-        public virtual IDeclarationSyntax ParseDeclaration(ITokenStream Tokens)
+        #region ParseTypedefDeclaration
+
+        public virtual IDeclarationSyntax ParseTypedefDeclaration(ITokenStream Tokens)
         {
-            var decl = ParseDeclaration(Tokens, false);
-            if (!string.IsNullOrWhiteSpace(decl.Name) && Tokens.PeekNoTrivia().Type == TokenType.RBraces)
+            var keyword = Tokens.NextNoTrivia(TokenType.TypedefKeyword, Log);
+            var decl = ParseDeclarationStatement(Tokens);
+            return new TypedefSyntax(keyword, decl);
+        }
+
+        #endregion
+
+        public virtual IDeclarationSyntax ParseSingleDeclaration(ITokenStream Tokens)
+        {
+            if (Tokens.PeekNoTrivia().Type == TokenType.TypedefKeyword)
             {
-                return ParseFunctionDefinition(decl, Tokens);
+                return ParseTypedefDeclaration(Tokens);
             }
             else
             {
-                return ParseFieldDefinition(decl, Tokens);
+                var decl = ParseDeclaration(Tokens, false);
+                if (!string.IsNullOrWhiteSpace(decl.Name) && Tokens.PeekNoTrivia().Type == TokenType.RBraces)
+                {
+                    return ParseFunctionDefinition(decl, Tokens);
+                }
+                else
+                {
+                    return ParseFieldDefinition(decl, Tokens);
+                }
             }
         }
 
@@ -1212,7 +1232,7 @@ namespace Flame.C.Parser
             var peek = Tokens.PeekNoTrivia();
             while (peek.Type != TokenType.EndOfFile && peek.Type != TokenType.UNDEFINED)
             {
-                results.Add(ParseDeclaration(Tokens));
+                results.Add(ParseSingleDeclaration(Tokens));
                 peek = Tokens.PeekNoTrivia();
             }
             return results;

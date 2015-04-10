@@ -28,16 +28,6 @@ namespace Flame.Syntax.C
             }
         }
 
-        public bool IsExtensionMember
-        {
-            const get return false;
-        }
-
-        public bool IsSingletonMember
-        {
-            const get return false;
-        }
-
         public void Declare(ICSyntaxState State)
         {
             var elemType = Declaration.ElementType.CreateVerifiedType(State);

@@ -1,0 +1,33 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Expressions;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+	public class DeclarationStatementSyntax : IStatementSyntax, ISourceSyntax
+    {
+        public const this(set IDeclarationSyntax Declaration);
+
+        public IDeclarationSyntax Declaration { const get; private set; }
+
+		public SourceLocation Location
+		{
+			const get return Declaration.GetSourceLocation();
+		}
+
+        public IStatement CreateStatement(ISyntaxState State)
+        {
+            Declaration.Declare((ICSyntaxState)State);
+            return new EmptyStatement();
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            return Declaration.GetCode();
+        }
+    }
+}

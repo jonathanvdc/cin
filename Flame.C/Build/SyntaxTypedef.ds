@@ -1,0 +1,147 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Flame.Build;
+using Flame.Compiler;
+using Flame.Compiler.Build;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Expressions;
+using Flame.C.Lexer;
+using Flame.Syntax;
+using Flame.Syntax.C;
+
+namespace Flame.C.Build
+{
+    public class SyntaxTypedef : ICType
+    {
+        public const this(set IType ElementType, set IDeclaratorSyntax DeclaratorSyntax,
+            set ICSyntaxState DeclaringState);
+
+        public IType ElementType { const get; private set; }
+        public IDeclaratorSyntax DeclaratorSyntax { const get; private set; }
+        public ICSyntaxState DeclaringState { const get; private set; }
+
+        public INamespace DeclaringNamespace { const get return DeclaringState.DeclaringUnit; }
+
+        public string Name { const get return DeclaratorSyntax.Name; }
+        public string TypeName { const get return Name; }
+        public string LocalName { const get return Name; }
+
+        private IType type;
+        public IType Type
+        {
+            const get
+            {
+                if (type == null)
+                {
+                    return DeclaratorSyntax.CreateType(ElementType, DeclaringState);
+                }
+                return type;
+            }
+        }
+
+        public CompilationUnit DeclaringUnit
+        {
+            const get return DeclaringState.DeclaringUnit;
+        }
+
+        public bool IsDefinition
+        {
+            const get return Type.IsDefined;
+        }
+
+        public string FullName
+        {
+            const get return MemberExtensions.CombineNames(DeclaringNamespace.FullName, Name);
+        }
+
+        public const [IAttribute] GetAttributes()
+        {
+            return Type.GetAttributes();
+        }
+
+        public const [IType] GetGenericArguments()
+        {
+            return Type.GetGenericArguments();
+        }
+
+        public const [IGenericParameter] GetGenericParameters()
+        {
+            return Type.GetGenericParameters();
+        }
+
+        public const IType GetGenericDeclaration()
+        {
+            return this;
+        }
+
+        public const IType MakeGenericType([IType] TypeArguments)
+        {
+            return this;
+        }
+
+        public bool IsContainerType
+        {
+            const get return false;
+        }
+
+        public const IContainerType AsContainerType()
+        {
+            return null;
+        }
+
+        public const IArrayType MakeArrayType(int Rank)
+        {
+            return new DescribedArrayType(this, Rank);
+        }
+
+        public const IPointerType MakePointerType(PointerKind Kind)
+        {
+            return new DescribedPointerType(this, Kind);
+        }
+
+        public const IVectorType MakeVectorType(int[] Dimensions)
+        {
+            return new DescribedVectorType(this, Dimensions);
+        }
+
+        public const IBoundObject GetDefaultValue()
+        {
+            return null;
+        }
+
+        #region Members
+
+        public const IType[] GetBaseTypes()
+        {
+            return Type.GetBaseTypes();
+        }
+
+        public const IMethod[] GetMethods()
+        {
+            return Type.GetMethods();
+        }
+
+        public const IMethod[] GetConstructors()
+        {
+            return Type.GetConstructors();
+        }
+
+        public const IProperty[] GetProperties()
+        {
+            return Type.GetProperties();
+        }
+
+        public const IField[] GetFields()
+        {
+            return Type.GetFields();
+        }
+
+        public const ITypeMember[] GetMembers()
+        {
+            return Type.GetMembers();
+        }
+
+        #endregion
+    }
+}

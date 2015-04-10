@@ -34,6 +34,7 @@ namespace Flame.C.Lexer
 			this.keywords["struct"] = TokenType.StructKeyword;
 			this.keywords["union"] = TokenType.UnionKeyword;
 			this.keywords["enum"] = TokenType.EnumKeyword;
+			this.keywords["typedef"] = TokenType.TypedefKeyword;
 			this.keywords["inline"] = TokenType.InlineKeyword;
 			this.keywords["const"] = TokenType.ConstKeyword;
 			this.keywords["static"] = TokenType.StaticKeyword;

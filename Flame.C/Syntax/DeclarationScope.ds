@@ -15,18 +15,22 @@ namespace Flame.Syntax.C
             methods = new Dictionary<string, SyntaxFunction>();
             fields = new Dictionary<string, SyntaxField>();
             structs = new Dictionary<string, SyntaxStruct>();
+            typedefs = new Dictionary<string, SyntaxTypedef>();
             allMethods = new Dictionary<string, IMethod>();
             allFields = new Dictionary<string, IField>();
             allStructs = new Dictionary<string, SyntaxStruct>();
+            allTypedefs = new Dictionary<string, SyntaxTypedef>();
         }
         public const this(set CompilationUnit Unit, set DeclarationScope Parent)
         {
             methods = new Dictionary<string, SyntaxFunction>();
             fields = new Dictionary<string, SyntaxField>();
             structs = new Dictionary<string, SyntaxStruct>();
+            typedefs = new Dictionary<string, SyntaxTypedef>();
             allMethods = new Dictionary<string, IMethod>(Parent.allMethods);
             allFields = new Dictionary<string, IField>(Parent.allFields);
             allStructs = new Dictionary<string, SyntaxStruct>(Parent.allStructs);
+            allTypedefs = new Dictionary<string, SyntaxTypedef>(Parent.allTypedefs);
         }
 
         public CompilationUnit Unit { const get; private set; }
@@ -37,9 +41,11 @@ namespace Flame.Syntax.C
         private Dictionary<string, SyntaxFunction> methods;
         private Dictionary<string, SyntaxField> fields;
         private Dictionary<string, SyntaxStruct> structs;
+        private Dictionary<string, SyntaxTypedef> typedefs;
         private Dictionary<string, IField> allFields;
         private Dictionary<string, IMethod> allMethods;
         private Dictionary<string, SyntaxStruct> allStructs;
+        private Dictionary<string, SyntaxTypedef> allTypedefs;
 
         public static const IMarkupNode CreateRedefinitionNode(string Name,
             SourceLocation NewDefinition, SourceLocation OldDefinition)
@@ -157,12 +163,43 @@ namespace Flame.Syntax.C
             return structs[name];
         }
 
+        public IType Declare(SyntaxTypedef Typedef)
+        {
+            string name = Typedef.Name;
+            if (typedefs.ContainsKey(name))
+            {
+                var old = typedefs[name];
+                if (old.Type.Equals(Typedef.Type))
+                {
+                    Typedef = old;
+                }
+                else
+                {
+                    Unit.Assembly.Log.LogError(new LogEntry("Typedef redefinition with different types",
+                        CreateRedefinitionNode(Typedef.LocalName,
+                            Typedef.DeclaratorSyntax.GetSourceLocation(),
+                            old.DeclaratorSyntax.GetSourceLocation())));
+                }
+            }
+            typedefs[name] = Typedef;
+            allTypedefs[name] = Typedef;
+            return Typedef;
+        }
+
         public [IField] LocalFields { const get return fields.Values; }
         public [IMethod] LocalFunctions { const get return methods.Values; }
-        public [ICType] LocalTypes { const get return structs.Values; }
+        public [ICType] LocalTypes
+        {
+            const get
+                return Enumerable.Concat<ICType>(structs.Values, typedefs.Values);
+        }
 
         public [IField] AllFields { const get return allFields.Values; }
         public [IMethod] AllFunctions { const get return allMethods.Values; }
-        public [ICType] AllTypes { const get return allStructs.Values; }
+        public [ICType] AllTypes
+        {
+            const get
+                return Enumerable.Concat<ICType>(allStructs.Values, allTypedefs.Values);
+        }
     }
 }

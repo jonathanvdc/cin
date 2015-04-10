@@ -24,6 +24,8 @@
       <Compile Include="Build/SyntaxField.ds" />
       <Compile Include="Build/SyntaxFunction.ds" />
       <Compile Include="Build/SyntaxStruct.ds" />
+      <Compile Include="Build/SyntaxTypedef.ds" />
+      <Compile Include="Build/TypedefUnwrappingTransformer.ds" />
   </ItemGroup>
   <ItemGroup Name="Lexer">
       <Compile Include="Lexer/Token.ds" />
@@ -71,6 +73,7 @@
         <Compile Include="Syntax/Statements/BlockSyntax.ds" />
         <Compile Include="Syntax/Statements/BreakSyntax.ds" />
         <Compile Include="Syntax/Statements/ContinueSyntax.ds" />
+        <Compile Include="Syntax/Statements/DeclarationStatementSyntax.ds" />
         <Compile Include="Syntax/Statements/DoWhileSyntax.ds" />
         <Compile Include="Syntax/Statements/EmptySyntax.ds" />
         <Compile Include="Syntax/Statements/ExpressionStatementSyntax.ds" />
@@ -85,6 +88,7 @@
     <ItemGroup Name="Structure">
         <Compile Include="Syntax/Structure/FieldDefinitionSyntax.ds" />
         <Compile Include="Syntax/Structure/FunctionDefinitionSyntax.ds" />
+        <Compile Include="Syntax/Structure/TypedefSyntax.ds" />
     </ItemGroup>
     <ItemGroup Name="Types">
         <Compile Include="Syntax/Types/ArrayDeclaratorSyntax.ds" />

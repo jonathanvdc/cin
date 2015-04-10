@@ -197,6 +197,11 @@ namespace Flame.Syntax.C
             return Scope.Declare(Field);
         }
 
+        public IType Declare(SyntaxTypedef Typedef)
+        {
+            return Scope.Declare(Typedef);
+        }
+
         #endregion
     }
 }

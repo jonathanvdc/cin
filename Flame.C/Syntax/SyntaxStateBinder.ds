@@ -30,7 +30,7 @@ namespace Flame.Syntax.C
         {
             var result = GetType(Name, Scope.AllTypes);
             if (result != null)
-                return result;
+                return TypedefUnwrappingTransformer.Convert(result);
 
             return Unit.Assembly.ExternalBinder.BindType(Name);
         }

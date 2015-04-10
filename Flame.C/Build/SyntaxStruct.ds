@@ -150,7 +150,7 @@ namespace Flame.C.Build
 
         #region Members
 
-        public IType[] GetBaseTypes()
+        public const IType[] GetBaseTypes()
         {
             return new IType[] { };
         }
@@ -220,7 +220,7 @@ namespace Flame.C.Build
         }
         public IField[] Fields { const get return GetFields(); }
 
-        public ITypeMember[] GetMembers()
+        public const ITypeMember[] GetMembers()
         {
             return GetFields();
         }

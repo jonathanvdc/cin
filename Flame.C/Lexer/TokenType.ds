@@ -36,6 +36,7 @@ namespace Flame.C.Lexer
         SizeOfKeyword = 25,
         ForKeyword = 27,
         ReturnKeyword = 28,
+        TypedefKeyword = 34,
         UnionKeyword = 35,
         StructKeyword = 36,
         EnumKeyword = 37,

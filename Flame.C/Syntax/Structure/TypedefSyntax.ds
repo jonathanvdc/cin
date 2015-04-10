@@ -1,0 +1,51 @@
+
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Flame.Compiler;
+using Flame.C.Build;
+using Flame.C.Lexer;
+
+namespace Flame.Syntax.C
+{
+    public class TypedefSyntax : IDeclarationSyntax, ISourceSyntax
+    {
+        public const this(set Token TypedefKeyword, set VariableDeclarationSyntax Declaration);
+
+        public Token TypedefKeyword { const get; private set; }
+        public VariableDeclarationSyntax Declaration { const get; private set; }
+
+        public SourceLocation Location
+        {
+            const get
+            {
+                return TypedefKeyword.Location.Concat(Declaration.Location);
+            }
+        }
+
+        public void Declare(ICSyntaxState State)
+        {
+            var type = Declaration.Type.CreateVerifiedType(State);
+            foreach (var typedefDecl in Declaration.Declarations)
+            {
+                var typedefSyntax = new SyntaxTypedef(type, typedefDecl.Declarator,
+                                            State);
+
+                if (typedefDecl.Value != null)
+                {
+                    State.Log.LogError(new LogEntry("Assignment to typedef type identifier.",
+                        "Assignment to typedef type identifiers is meaningless.",
+                        typedefDecl.AssignmentLocation));
+                }
+
+                State.Declare(typedefSyntax);
+            }
+        }
+
+        public const CodeBuilder GetCode()
+        {
+            return Declaration.GetCode();
+        }
+    }
+}

@@ -112,6 +112,7 @@ namespace Flame.C.Lexer
 			RegisterExample(TokenType.StructKeyword, "struct");
 			RegisterExample(TokenType.UnionKeyword, "union");
 			RegisterExample(TokenType.EnumKeyword, "enum");
+			RegisterExample(TokenType.TypedefKeyword, "typedef");
 			RegisterExample(TokenType.InlineKeyword, "inline");
 			RegisterExample(TokenType.ConstKeyword, "const");
 			RegisterExample(TokenType.StaticKeyword, "static");
