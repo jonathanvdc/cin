@@ -1,0 +1,54 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+
+namespace Flame.C.Preprocessor
+{
+    public class PreprocessorState
+    {
+        public const this(set PreprocessorEnvironment Environment)
+        {
+            this.defs = new List<DefineDirective>();
+        }
+
+        public PreprocessorEnvironment Environment { const get; private set; }
+
+        private List<DefineDirective> defs;
+        public [DefineDirective] Definitions { const get return defs; }
+
+        public void Define(DefineDirective Directive)
+        {
+            Undefine(Directive.Name);
+            defs.Add(Directive);
+        }
+        public void Undefine(string Name)
+        {
+            for (int i = 0; i < defs.Count; i++)
+            {
+                if (defs[i].Name.Equals(Name))
+                {
+                    defs.RemoveAt(i);
+                    i--;
+                }
+            }
+        }
+
+        public PreprocessedSourceBuilder Expand(ISourceReader Reader)
+        {
+            var preprocessor = new PreprocessorInstance(this);
+            preprocessor.Reader.Append(Reader);
+            preprocessor.Process();
+            return preprocessor.Builder;
+        }
+        public PreprocessedSourceBuilder Expand(SourceChunk Chunk)
+        {
+            return Expand(new ChunkReader(Chunk));
+        }
+        public PreprocessedSourceBuilder Expand(ISourceDocument Document)
+        {
+            var text = Document.Source;
+            return Expand(new SourceChunk(text, new SourceLocation(Document, 0, text.Length)));
+        }
+    }
+}

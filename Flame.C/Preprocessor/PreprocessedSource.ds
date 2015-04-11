@@ -1,0 +1,30 @@
+using Flame.Compiler;
+
+namespace Flame.C.Preprocessor
+{
+    public class PreprocessedSource
+    {
+        public const this(set SourceLocation Location,
+            set IDirective Directive, set string Source);
+        public const this(set SourceLocation Location,
+            set string Source);
+
+        public const this(SourceChunk Chunk)
+        {
+            this.Source = Chunk.Source;
+            this.Location = Chunk.Location;
+        }
+
+        public SourceLocation Location { const get; private set; }
+        public IDirective Directive { const get; private set; }
+        public string Source { const get; private set; }
+
+        public SourceChunk ToChunk()
+        {
+            return new SourceChunk(Source, Location);
+        }
+
+        public bool IsOriginal { const get return Directive == null; }
+        public int Length { const get return Source.Length; }
+    }
+}

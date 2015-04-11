@@ -1,0 +1,135 @@
+using Flame.Compiler;
+
+namespace Flame.C.Preprocessor
+{
+    public class SourceReader : ISourceReader
+    {
+        public const this([SourceChunk] Chunks)
+        {
+            this.sourceChunks = new List<SourceChunk>(Chunks);
+            this.chunkIndex = 0;
+            this.chunkOffset = 0;
+        }
+        public const this()
+        {
+            this.sourceChunks = new List<SourceChunk>();
+            this.chunkIndex = 0;
+            this.chunkOffset = 0;
+        }
+
+        private List<SourceChunk> sourceChunks;
+        private int chunkIndex;
+        private int chunkOffset;
+
+        public int Size
+        {
+            const get
+            {
+                int result = 0;
+                foreach (var item in sourceChunks)
+                {
+                    result += item.Length;
+                }
+                return result;
+            }
+        }
+
+        public SourceChunk CurrentChunk
+        {
+            const get return sourceChunks[chunkIndex];
+        }
+
+        public int Advance(int Offset)
+        {
+            if (Offset > 0)
+            {
+                return AdvanceForward(Offset);
+            }
+            else if (Offset < 0)
+            {
+                return AdvanceBackward(-Offset);
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        private void AdvanceForward(int Offset)
+        {
+            while (Offset >= CurrentChunk.Length - chunkOffset)
+            {
+                Offset -= CurrentChunk.Length - chunkOffset;
+                chunkIndex++;
+                chunkOffset = 0;
+            }
+            chunkOffset += Offset;
+        }
+
+        private void AdvanceBackward(int Offset)
+        {
+            while (Offset > chunkOffset)
+            {
+                Offset -= chunkOffset;
+                chunkIndex--;
+                chunkOffset = CurrentChunk.Length - 1;
+            }
+            chunkOffset -= Offset;
+        }
+
+        public char CurrentCharacter
+        {
+            const get return CurrentChunk.Source[chunkOffset];
+        }
+
+        public bool IsEmpty
+        {
+            const get return sourceChunks.Count == chunkIndex;
+        }
+
+        /*/// <summary>
+        /// Peeks a string of the specified length.
+        /// </summary>
+        public const string Peek(int Length)
+        {
+            var chunk = sourceChunks[chunkIndex];
+            string result = chunk.Source.Substring(chunkOffset, Math.Min(chunk.Length, Length));
+            int parsedLength = result.Length;
+            int i = chunkIndex;
+            while (totalLength < Length)
+            {
+                i++;
+                chunk = sourceChunks[i];
+                result += chunk.Source.Substring(0, Math.Min(chunk.Length, Length - parsedLength));
+            }
+            return result;
+        }
+
+        public const [SourceChunk] Parse(int Length)
+        {
+            var results = new List<SourceChunk>();
+
+            while (Length >= CurrentChunk.Length - chunkOffset)
+            {
+                results.Add(CurrentChunk.Subchunk(chunkOffset));
+                Length -= CurrentChunk.Length - chunkOffset;
+                chunkIndex++;
+                chunkOffset = 0;
+            }
+            results.Add(chunk.Subchunk(chunkOffset, Length));
+            chunkOffset += Length;
+
+            return results;
+        }*/
+
+        public void AppendSource(SourceChunk Source)
+        {
+            this.sourceChunks.Add(Source);
+        }
+        public void AppendSource(ISourceDocument Document)
+        {
+            var text = Document.GetText();
+            AppendSource(new SourceChunk(text, new SourceLocation(Document, 0, text.Length)));
+        }
+    }
+}

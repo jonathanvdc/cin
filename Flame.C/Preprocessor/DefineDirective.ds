@@ -1,0 +1,57 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+using Flame.Syntax;
+using Flame.C.Lexer;
+using Flame.Syntax.C;
+
+namespace Flame.C.Preprocessor
+{
+    public class DefineDirective : IDirective
+    {
+        public const this(set string Name, set string[] Parameters, set DefineBody Body);
+
+        public string Name { const get; private set; }
+        public string[] Parameters { const get; private set; }
+        public DefineBody Body { const get; private set; }
+
+        public bool HasParameters
+        {
+            const get return Parameters.Length > 0;
+        }
+
+        public void Apply(PreprocessorInstance Processor)
+        {
+            Processor.State.Define(this);
+        }
+
+        public override const string ToString()
+        {
+            return GetCode().ToString();
+        }
+
+        public CodeBuilder GetCode()
+        {
+            var cb = new CodeBuilder();
+            cb.Append("#define ");
+            cb.Append(Name);
+            if (HasParameters)
+            {
+                cb.Append('(');
+                for (int i = 0; i < Parameters.Length; i++)
+                {
+                    if (i > 0)
+                    {
+                        cb.Append(", ");
+                    }
+                    cb.Append(Parameters[i]);
+                }
+                cb.Append(')');
+            }
+            cb.Append(' ');
+            cb.Append(Body.GetCode());
+            return cb;
+        }
+    }
+}

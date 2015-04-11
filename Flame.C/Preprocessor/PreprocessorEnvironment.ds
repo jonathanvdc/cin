@@ -1,0 +1,42 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+
+namespace Flame.C.Preprocessor
+{
+    public class PreprocessorEnvironment : IDirectiveParser
+    {
+        public const this(set ICompilerLog Log, set [IDirectiveParser] Parsers);
+
+        public [IDirectiveParser] Parsers { const get; private set; }
+        public ICompilerLog Log { const get; private set; }
+
+        public const IDirectiveParser GetParser(string Name)
+        {
+            foreach (var item in Parsers)
+                if (item.Matches(Name))
+            {
+                return item;
+            }
+            return null;
+        }
+
+        public const bool Matches(string Name)
+        {
+            return GetParser(Name) != null;
+        }
+        public IDirective Parse(string Name, PreprocessorState State, ISourceReader Reader)
+        {
+            var parser = GetParser(Name);
+            return parser.Parse(Name, State, Reader);
+        }
+
+        public static const PreprocessorEnvironment CreateDefaultEnvironment(ICompilerLog Log)
+        {
+            var parsers = new List<IDirectiveParser>();
+            parsers.Add(DefineDirectiveParser);
+            return new PreprocessorEnvironment(Log, parsers);
+        }
+    }
+}

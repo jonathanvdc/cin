@@ -1,0 +1,64 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+using Flame.Syntax;
+using Flame.C.Lexer;
+using Flame.Syntax.C;
+
+namespace Flame.C.Preprocessor
+{
+    public struct DefineBodyChunk
+    {
+        public const this(set SourceChunk[] Source, set int ParameterIndex);
+        public const this(set SourceChunk[] Source)
+        {
+            this.ParameterIndex = -1;
+        }
+
+        public int ParameterIndex { const get; private set; }
+        public SourceChunk[] Source { const get; private set; }
+
+        public const SourceChunk[] Substitute(SourceChunk[][] Arguments)
+        {
+            if (ParameterIndex < 0 || ParameterIndex >= Arguments.Length)
+            {
+                return Source;
+            }
+            else
+            {
+                return Arguments[ParameterIndex];
+            }
+        }
+    }
+
+    public class DefineBody : ISyntaxNode
+    {
+        public const this(set [DefineBodyChunk] Chunks);
+
+        public [DefineBodyChunk] Chunks { const get; private set; }
+
+        public const [SourceChunk] Substitute(SourceChunk[][] Arguments)
+        {
+            var results = new List<SourceChunk>();
+            foreach (var item in Chunks)
+            {
+                results.AddRange(item.Substitute(Arguments));
+            }
+            return results;
+        }
+
+        public CodeBuilder GetCode()
+        {
+            var cb = new CodeBuilder();
+            foreach (var item in Chunks)
+            {
+                foreach (var src in item.Source)
+                {
+                    cb.Append(src.Source);
+                }
+            }
+            return cb;
+        }
+    }
+}

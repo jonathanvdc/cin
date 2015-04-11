@@ -1,0 +1,31 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+
+namespace Flame.C.Preprocessor
+{
+    public struct SourceChunk
+    {
+        public const this(set string Source, set SourceLocation Location);
+
+        public SourceLocation Location { const get; private set; }
+        public string Source { const get; private set; }
+        public int Length { const get return Location.Length; }
+
+        public override const string ToString()
+        {
+            return Source;
+        }
+
+        public const SourceChunk Subchunk(int Offset, int Length)
+        {
+            var loc = new SourceLocation(Location.Document, Location.Position + Offset, Length);
+            return new SourceChunk(Source.Substring(Offset, Length), loc);
+        }
+        public const SourceChunk Subchunk(int Offset)
+        {
+            return Subchunk(Offset, Length - Offset);
+        }
+    }
+}

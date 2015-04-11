@@ -1,0 +1,11 @@
+
+using Flame.Syntax;
+
+namespace Flame.C.Preprocessor
+{
+    public interface IDirectiveParser
+    {
+        const bool Matches(string Name);
+        IDirective Parse(string Name, PreprocessorState State, ISourceReader Reader);
+    }
+}

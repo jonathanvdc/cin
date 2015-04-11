@@ -3,6 +3,7 @@ using Flame.Build;
 using Flame.C.Build;
 using Flame.C.Lexer;
 using Flame.C.Parser;
+using Flame.C.Preprocessor;
 using Flame.Compiler;
 using Flame.Compiler.Projects;
 using Flame.Front.Projects;
@@ -82,6 +83,24 @@ namespace cin
             }
         }
 
+        public static TokenizerStream Preprocess(ISourceDocument Document, ICompilerLog Log)
+        {
+            var preprocessor = new PreprocessorState(PreprocessorEnvironment.Static_Singleton.Instance.CreateDefaultEnvironment(Log));
+            var inst = new PreprocessorInstance(preprocessor);
+            inst.Reader.Append(Document);
+            try
+            {
+                inst.Process();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }            
+            var result = inst.Builder;
+            Log.LogMessage(new LogEntry(Document.Identifier + " after preprocessing", result.ToString()));
+            return new TokenizerStream(Document);
+        }
+
         public static Task<CompilationUnit> ParseCompilationUnitAsync(IProjectSourceItem SourceItem, SyntaxAssembly Assembly, CompilationParameters Parameters)
         {
             Parameters.Log.LogEvent(new LogEntry("Status", "Parsing " + SourceItem.SourceIdentifier));
@@ -92,7 +111,7 @@ namespace cin
                 {
                     return null;
                 }
-                var parser = new TokenizerStream(code);
+                var parser = Preprocess(code, Parameters.Log);
                 var unit = ParseCompilationUnit(parser, Assembly);
                 Parameters.Log.LogEvent(new LogEntry("Status", "Parsed " + SourceItem.SourceIdentifier));
                 return unit;

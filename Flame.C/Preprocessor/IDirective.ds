@@ -1,0 +1,10 @@
+
+using Flame.Syntax;
+
+namespace Flame.C.Preprocessor
+{
+    public interface IDirective : ISyntaxNode
+    {
+        void Apply(PreprocessorInstance Processor);
+    }
+}

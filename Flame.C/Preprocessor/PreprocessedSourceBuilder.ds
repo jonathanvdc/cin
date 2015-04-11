@@ -1,0 +1,178 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+
+namespace Flame.C.Preprocessor
+{
+    public class PreprocessedSourceBuilder
+    {
+        public const this()
+        {
+            this.sourceItems = new List<PreprocessedSource>();
+            this.currentBuilder = new StringBuilder();
+            this.directives = new Stack<IDirective>();
+            PushDirective(null);
+        }
+
+        private List<PreprocessedSource> sourceItems;
+
+        private Stack<IDirective> directives;
+        private StringBuilder currentBuilder;
+        private SourceLocation startLocation;
+
+        public IDirective CurrentDirective { const get return directives.Peek(); }
+        public SourceLocation CurrentLocation
+        {
+            const get
+            {
+                if (startLocation == null) return null;
+                else return new SourceLocation(startLocation.Document, startLocation.Position + currentBuilder.Length, 0);
+            }
+        }
+
+        private void Flush()
+        {
+            if (currentBuilder.Length > 0)
+            {
+                var loc = new SourceLocation(startLocation.Document, startLocation.Position, currentBuilder.Length);
+                var src = new PreprocessedSource(loc, CurrentDirective, currentBuilder.ToString());
+                sourceItems.Add(src);
+                startLocation = loc;
+                currentBuilder = new StringBuilder();
+            }
+        }
+
+        private void Unflush()
+        {
+            while (currentBuilder.Length == 0 && sourceItems.Count > 0)
+            {
+                var last = sourceItems[sourceItems.Count - 1];
+                sourceItems.RemoveAt(sourceItems.Count - 1);
+                Append(last.Source, last.Location);
+            }
+        }
+
+        private const bool IsContiguous(SourceLocation Location)
+        {
+            if (startLocation == null) return false;
+            else return startLocation.Position + currentBuilder.Length == Location.Position;
+        }
+
+        public void PushDirective(IDirective Directive)
+        {
+            Flush();
+            directives.Push(Directive);
+        }
+
+        public void PopDirective()
+        {
+            Flush();
+            directives.Pop();
+        }
+
+        public const bool EndsWith(string Value)
+        {
+            return currentBuilder.EndsWith(Value);
+        }
+
+        private char GetUnflushedLastCharacter()
+        {
+            Unflush();
+            return currentBuilder[currentBuilder.Length - 1];
+        }
+
+        public void TrimEnd()
+        {
+            while (SourceReaderExtensions.IsWhitespace(GetUnflushedLastCharacter()))
+            {
+                currentBuilder.Remove(currentBuilder.Length - 1, 1);
+            }
+        }
+
+        public void Append(char Value, SourceLocation Location)
+        {
+            if (!IsContiguous(Location))
+            {
+                Flush();
+                startLocation = Location;
+            }
+            currentBuilder.Append(Value);
+        }
+
+        public void Append(string Value, SourceLocation Location)
+        {
+            if (!IsContiguous(Location))
+            {
+                Flush();
+                startLocation = Location;
+            }
+            currentBuilder.Append(Value);
+        }
+
+        public void Append(SourceChunk Value)
+        {
+            if (!IsContiguous(Value.Location))
+            {
+                Flush();
+                startLocation = Value.Location;
+            }
+            currentBuilder.Append(Value.Source);
+        }
+
+        public void Append(PreprocessedSourceBuilder Other)
+        {
+            Flush();
+            foreach (var item in Other.ToPreprocessedDocument().SourceItems)
+            {
+                sourceItems.Add(item);
+            }
+            Unflush();
+        }
+
+        public void Pop(int Length)
+        {
+            while (Length > 0)
+            {
+                Unflush();
+                int offset = Math.Max(currentBuilder.Length - Length, 0);
+                int delta = currentBuilder.Length - offset;
+                currentBuilder.Remove(offset, delta);
+                Length -= delta;
+            }
+        }
+
+        public PreprocessedDocument ToPreprocessedDocument()
+        {
+            Flush();
+            return new PreprocessedDocument(sourceItems);
+        }
+
+        public SourceChunk[] ToChunks()
+        {
+            Flush();
+            var results = new SourceChunk[sourceItems.Count];
+            foreach (var input in sourceItems, var output in results)
+            {
+                output = input.ToChunk();
+            }
+            return results;
+        }
+
+        public ISourceReader ToReader()
+        {
+            return new MultiReader(ToChunks());
+        }
+
+        public override const string ToString()
+        {
+            var sb = new StringBuilder();
+            foreach (var item in sourceItems)
+            {
+                sb.Append(item.Source);
+            }
+            sb.Append(currentBuilder);
+            return sb.ToString();
+        }
+    }
+}

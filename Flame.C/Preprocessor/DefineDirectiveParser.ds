@@ -1,0 +1,57 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+using Flame.Syntax;
+
+namespace Flame.C.Preprocessor
+{
+    public static class DefineDirectiveParser : IDirectiveParser
+    {
+        public const bool Matches(string Name)
+        {
+            return Name.ToLower().Equals("define");
+        }
+        public IDirective Parse(string Name, PreprocessorState State, ISourceReader Reader)
+        {
+            Reader.ReadWhitespace();
+            string defName = Reader.ReadIdentifier();
+            ISourceReader[] args = Reader.ReadMacroArguments();
+            string[] parameters = new string[args.Length];
+            foreach (var input in args, var output in parameters)
+            {
+                output = input.ReadToEnd();
+            }
+            Reader.ReadWhitespace();
+            var body = ParseDirectiveBody(parameters, State, Reader);
+            return new DefineDirective(defName, parameters, body);
+        }
+
+        private DefineBody ParseDirectiveBody(string[] Parameters, PreprocessorState State, ISourceReader Reader)
+        {
+            var expanded = State.Expand(Reader).ToReader();
+            var chunks = new List<DefineBodyChunk>();
+            var builder = new PreprocessedSourceBuilder();
+            while (!expanded.IsEmpty)
+            {
+                expanded.ReadTo(builder);
+                for (int i = 0; i < Parameters.Length; i++)
+                    if (builder.EndsWith(Parameters[i]))
+                {
+                    var arg = Parameters[i];
+                    builder.Pop(arg.Length);
+                    var currentLoc = builder.CurrentLocation;
+                    var loc = new SourceLocation(currentLoc.Document, currentLoc.Position, arg.Length);
+                    var substChunk = new SourceChunk(arg, loc);
+                    var bodyChunk = new DefineBodyChunk(new SourceChunk[] { substChunk }, i);
+                    chunks.Add(new DefineBodyChunk(builder.ToChunks()));
+                    chunks.Add(bodyChunk);
+                    builder = new PreprocessedSourceBuilder();
+                }
+            }
+            builder.TrimEnd();
+            chunks.Add(new DefineBodyChunk(builder.ToChunks()));
+            return new DefineBody(chunks);
+        }
+    }
+}

@@ -1,0 +1,34 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+
+namespace Flame.C.Preprocessor
+{
+    public class PreprocessedDocument
+    {
+        public const this(set [PreprocessedSource] SourceItems);
+
+        public [PreprocessedSource] SourceItems { const get; private set; }
+
+        public const ISourceReader CreateCreader()
+        {
+            var readers = new List<ISourceReader>();
+            foreach (var input in SourceItems, var output in readers)
+            {
+                output = new ChunkReader(input.ToChunk());
+            }
+            return new MultiReader(readers);
+        }
+
+        public override const string ToString()
+        {
+            var sb = new StringBuilder();
+            foreach (var item in SourceItems)
+            {
+                sb.Append(item.Source);
+            }
+            return sb.ToString();
+        }
+    }
+}

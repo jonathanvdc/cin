@@ -1,0 +1,267 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+
+namespace Flame.C.Preprocessor
+{
+    public static class SourceReaderExtensions
+    {
+        public static const bool IsWhitespace(char Value)
+        {
+            return Value == ' ' || Value == '\n' || Value == '\t' || Value == '\r';
+        }
+
+        public static const bool IsIdentifierElement(char Value)
+        {
+            return char.IsLetterOrDigit(Value) || Value == '_';
+        }
+
+        public static const bool IsIdentifierFirstElement(char Value)
+        {
+            return char.IsLetter(Value) || Value == '_';
+        }
+
+        public static const bool IsNumberToken(char Value)
+        {
+            return char.IsDigit(Value) || Value == '.' || Value == 'e' || Value == 'E' || Value == 'f' || Value == 'F';
+        }
+
+        public static const bool IsHexIntegerStart(string Value)
+        {
+            return Value[0] == '0' && (Value[1] == 'x' || Value[1] == 'X');
+        }
+
+        public static const bool IsBinaryIntegerStart(string Value)
+        {
+            return Value[0] == '0' && (Value[1] == 'b' || Value[1] == 'B');
+        }
+
+        public static void MoveNext(this ISourceReader Reader)
+        {
+            Reader.Advance(1);
+        }
+
+        public static void MovePrevious(this ISourceReader Reader)
+        {
+            Reader.Advance(-1);
+        }
+
+        public static string PeekString(this ISourceReader Reader, int Length)
+        {
+            var sb = new StringBuilder();
+            for (int i = 0; i < Length && !Reader.IsEmpty; i++)
+            {
+                sb.Append(Reader.Read());
+            }
+            Reader.Advance(-sb.Length);
+            return sb.ToString();
+        }
+
+        public static void ReadTo(this ISourceReader Reader, PreprocessedSourceBuilder Builder)
+        {
+            var loc = Reader.CurrentLocation;
+            char val = Reader.Read();
+            Builder.Append(val, loc);
+        }
+
+        public static void ReadAllTo(this ISourceReader Reader, PreprocessedSourceBuilder Builder)
+        {
+            while (!Reader.IsEmpty)
+            {
+                Reader.ReadTo(Builder);
+            }
+        }
+
+        public static char Read(this ISourceReader Reader)
+        {
+            char val = Reader.CurrentCharacter;
+            Reader.MoveNext();
+            return val;
+        }
+
+        public static string Read(this ISourceReader Reader, int Length)
+        {
+            var sb = new StringBuilder();
+            for (int i = 0; i < Length && !Reader.IsEmpty; i++)
+            {
+                sb.Append(Reader.Read());
+            }
+            return sb.ToString();
+        }
+
+        public static string ReadToEnd(this ISourceReader Reader)
+        {
+            var sb = new StringBuilder();
+            while (!Reader.IsEmpty)
+            {
+                sb.Append(Reader.Read());
+            }
+            return sb.ToString();
+        }
+
+        public static string ReadWhitespace(this ISourceReader Reader)
+        {
+            var sb = new StringBuilder();
+            while (!Reader.IsEmpty && IsWhitespace(Reader.CurrentCharacter))
+            {
+                sb.Append(Reader.Read());
+            }
+            return sb.ToString();
+        }
+
+        public static string ReadIdentifier(this ISourceReader Reader)
+        {
+            if (!IsIdentifierElement(Reader.CurrentCharacter))
+            {
+                return "";
+            }
+            var sb = new StringBuilder();
+            sb.Append(Reader.Read());
+            while (!Reader.IsEmpty && IsIdentifierFirstElement(Reader.CurrentCharacter))
+            {
+                sb.Append(Reader.Read());
+            }
+            return sb.ToString();
+        }
+
+        public static string ReadInteger(this ISourceReader Reader)
+        {
+            var sb = new StringBuilder();
+            while (!Reader.IsEmpty && char.IsDigit(Reader.CurrentCharacter))
+            {
+                sb.Append(Reader.Read());
+            }
+            return sb.ToString();
+        }
+
+        public static bool EndsWith(this StringBuilder Builder, string Value)
+        {
+            int builderLength = Builder.Length;
+            int valLength = Value.Length;
+            if (builderLength < valLength)
+            {
+                return false;
+            }
+            int offset = builderLength - valLength;
+            for (int i = 0; i < valLength; i++)
+            {
+                if (Builder[offset + i] != Value[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public static string ReadUntil(this ISourceReader Reader, string Terminator)
+        {
+            var sb = new StringBuilder();
+            while (!sb.EndsWith(Terminator))
+            {
+                sb.Append(Reader.Read());
+            }
+            return sb.ToString();
+        }
+
+        public static ISourceReader ReadUntilWithEscape(this ISourceReader Reader,
+            string Terminator, string EscapeSequence)
+        {
+            var builder = new PreprocessedSourceBuilder();
+            bool hasEscaped = false;
+            while (!builder.EndsWith(Terminator) || hasEscaped)
+            {
+                Reader.ReadTo(builder);
+                if (hasEscaped && builder.EndsWith(Terminator))
+                {
+                    hasEscaped = false;
+                }
+                else if (builder.EndsWith(EscapeSequence))
+                {
+                    hasEscaped = true;
+                    builder.Pop(EscapeSequence.Length);
+                }
+            }
+            return builder.ToReader();
+        }
+
+        public static string ReadString(this ISourceReader Reader, char Delimiter)
+        {
+            if (Reader.CurrentCharacter != Delimiter)
+                return "";
+
+            var sb = new StringBuilder();
+            sb.Append(Reader.Read());
+
+            bool escaping = false;
+            while (!Reader.IsEmpty && (Reader.CurrentCharacter != Delimiter || escaping))
+            {
+                if (Reader.CurrentCharacter == '\\')
+                    escaping = !escaping;
+                else
+                    escaping = false;
+
+                sb.Append(Reader.Read());
+            }
+            if (!Reader.IsEmpty)
+            {
+                sb.Append(Reader.Read());
+            }
+            return sb.ToString();
+        }
+
+        public static bool ExpectNoWhitespace(this ISourceReader Reader, char Value)
+        {
+            Reader.ReadWhitespace();
+            if (!Reader.IsEmpty && Reader.CurrentCharacter == Value)
+            {
+                Reader.MoveNext();
+                return true;
+            }
+            else return false;
+        }
+
+        public static SourceChunk[] ReadChunksToEnd(this ISourceReader Reader)
+        {
+            var builder = new PreprocessedSourceBuilder();
+            Reader.ReadAllTo(builder);
+            return builder.ToChunks();
+        }
+
+        public static ISourceReader[] ReadMacroArguments(this ISourceReader Reader)
+        {
+            if (!Reader.ExpectNoWhitespace('('))
+            {
+                return new ISourceReader[] { };
+            }
+            Reader.ReadWhitespace();
+            var args = new List<ISourceReader>();
+            var builder = new PreprocessedSourceBuilder();
+            int parenCount = 1;
+            while (parenCount > 0 && !Reader.IsEmpty)
+            {
+                if (Reader.CurrentCharacter == ')')
+                {
+                    parenCount--;
+                    if (parenCount > 1)
+                        Reader.ReadTo(builder);
+                    else
+                        Reader.MoveNext();
+                }
+                else if (Reader.CurrentCharacter == ',' && parenCount == 1)
+                {
+                    args.Add(builder.ToReader());
+                    builder = new PreprocessedSourceBuilder();
+                    Reader.MoveNext();
+                    Reader.ReadWhitespace();
+                }
+                else
+                {
+                    Reader.ReadTo(builder);
+                }
+            }
+            args.Add(builder.ToReader());
+            return args.ToArray();
+        }
+    }
+}

@@ -1,0 +1,54 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+using Flame.Syntax;
+
+namespace Flame.C.Preprocessor
+{
+    public class ChunkReader : ISourceReader
+    {
+        public const this(set SourceChunk Chunk)
+        {
+            this.Position = 0;
+        }
+
+        private SourceChunk Chunk { const get; private set; }
+        private int Position { const get; private set; }
+
+        public SourceLocation CurrentLocation
+        {
+            const get
+            {
+                var loc = Chunk.Location;
+                return new SourceLocation(loc.Document, loc.Position + Position, 1);
+            }
+        }
+
+        public int Advance(int Offset)
+        {
+            int newPos;
+            if (Offset < 0)
+            {
+                newPos = Math.Max(this.Position + Offset, 0);
+            }
+            else
+            {
+                newPos = Math.Min(this.Position + Offset, Chunk.Length);
+            }
+            int delta = newPos - this.Position;
+            this.Position = newPos;
+            return delta;
+        }
+
+        public char CurrentCharacter
+        {
+            const get return Chunk.Source[Position];
+        }
+
+        public bool IsEmpty
+        {
+            const get return Chunk.Length == Position;
+        }
+    }
+}

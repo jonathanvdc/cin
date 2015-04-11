@@ -1,0 +1,95 @@
+
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+
+namespace Flame.C.Preprocessor
+{
+    public class MultiReader : ISourceReader
+    {
+        public const this([SourceChunk] Chunks)
+        {
+            this.readers = new List<ISourceReader>();
+            this.readerIndex = 0;
+            AppendSource(Chunks);
+        }
+        public const this([ISourceReader] Readers)
+        {
+            this.readers = new List<ISourceReader>(Readers);
+            this.readerIndex = 0;
+        }
+        public const this()
+        {
+            this.readers = new List<ISourceReader>();
+            this.readerIndex = 0;
+        }
+
+        private List<ISourceReader> readers;
+        private int readerIndex;
+
+        public ISourceReader CurrentReader
+        {
+            const get return readers[readerIndex];
+        }
+
+        public int Advance(int Offset)
+        {
+            int totalOffset = 0;
+            if (readerIndex >= readers.Count && Offset < 0)
+            {
+                readerIndex = readers.Count - 1;
+            }
+            while (readerIndex < readers.Count && readerIndex >= 0 && totalOffset != Offset)
+            {
+                int requested = Offset - totalOffset;
+                int delta = CurrentReader.Advance(requested);
+                totalOffset += delta;
+                if (delta != requested || CurrentReader.IsEmpty)
+                {
+                    if (Offset < 0)
+                        readerIndex--;
+                    else
+                        readerIndex++;
+                }
+            }
+            return totalOffset;
+        }
+
+        public char CurrentCharacter
+        {
+            const get return CurrentReader.CurrentCharacter;
+        }
+
+        public SourceLocation CurrentLocation
+        {
+            const get return CurrentReader.CurrentLocation;
+        }
+
+        public bool IsEmpty
+        {
+            const get return readerIndex >= readers.Count;
+        }
+
+        public void Append(SourceChunk Chunk)
+        {
+            Append(new ChunkReader(Chunk));
+        }
+        public void Append([SourceChunk] Chunks)
+        {
+            foreach (var item in Chunks)
+            {
+                Append(item);
+            }
+        }
+        public void Append(ISourceReader Reader)
+        {
+            readers.Add(Reader);
+        }
+        public void Append(ISourceDocument Document)
+        {
+            var text = Document.Source;
+            Append(new SourceChunk(text, new SourceLocation(Document, 0, text.Length)));
+        }
+    }
+}

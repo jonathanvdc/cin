@@ -1,0 +1,118 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+
+namespace Flame.C.Preprocessor
+{
+    public class PreprocessorInstance
+    {
+        public const this(PreprocessorEnvironment Environment)
+        {
+            this.State = new PreprocessorState(Environment);
+            this.Builder = new PreprocessedSourceBuilder();
+            this.Reader = new MultiReader();
+        }
+        public const this(set PreprocessorState State)
+        {
+            this.Builder = new PreprocessedSourceBuilder();
+            this.Reader = new MultiReader();
+        }
+
+        public PreprocessorState State { const get; private set; }
+        public MultiReader Reader { const get; private set; }
+        public PreprocessedSourceBuilder Builder { const get; private set; }
+
+        public PreprocessorEnvironment Environment { const get return State.Environment; }
+
+        private void ProcessMacro(DefineDirective Directive)
+        {
+            Builder.Pop(Directive.Name.Length);
+            var args = ReadMacroArguments(Directive);
+            var chunkReader = new MultiReader(Directive.Body.Substitute(args));
+            Builder.Append(State.Expand(chunkReader));
+        }
+
+        private SourceChunk[][] ReadMacroArguments(DefineDirective Directive)
+        {
+            if (Directive.HasParameters)
+            {
+                var args = Reader.ReadMacroArguments();
+                var expandedArgs = new SourceChunk[][args.Length];
+                foreach (var input in args, var output in expandedArgs)
+                {
+                    output = State.Expand(input).ToChunks();
+                }
+                return expandedArgs;
+            }
+            else
+            {
+                return new SourceChunk[][] { };
+            }
+        }
+
+        private void ProcessMacro()
+        {
+            foreach (var item in State.Definitions)
+            {
+                if (Builder.EndsWith(item.Name))
+                {
+                    ProcessMacro(item);
+                    return;
+                }
+            }
+        }
+
+        private void ProcessCharacter()
+        {
+            Reader.ReadTo(Builder);
+            ProcessMacro();
+        }
+
+        private void ProcessItem()
+        {
+            char val = Reader.CurrentCharacter;
+            if (val == '#')
+            {
+                ProcessDirective();
+            }
+            else
+            {
+                ProcessCharacter();
+            }
+        }
+
+        private void ProcessDirective()
+        {
+            var startLoc = Reader.CurrentLocation;
+            Reader.MoveNext(); // Read octothorpe/hash ('#')
+            Reader.ReadWhitespace();
+            string name = Reader.ReadIdentifier();
+
+            // Now parse the body
+            var body = Reader.ReadUntilWithEscape("\n", "\\");
+
+            var parser = Environment.GetParser(name);
+            if (parser == null)
+            {
+                var endLoc = Reader.CurrentLocation;
+                Environment.Log.LogWarning(new LogEntry("Unknown preprocessor directive",
+                    "Preprocessor directive '" + name + "' was not recognized.",
+                    startLoc.Concat(endLoc)));
+            }
+            else
+            {
+                var directive = parser.Parse(name, State, body);
+                directive.Apply(this);
+            }
+        }
+
+        public void Process()
+        {
+            while (!Reader.IsEmpty)
+            {
+                ProcessItem();
+            }
+        }
+    }
+}
