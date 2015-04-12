@@ -235,7 +235,7 @@ namespace Flame.C.Preprocessor
                             builder.Pop(item.Key.Length);
                             var startLoc = builder.CurrentLocation;
                             Log.LogWarning(new LogEntry("Trigraph detected",
-                                "A trigraph was parsed. [-Wtrigraphs]",
+                                "Converted trigraph '" + item.Key + "' to '" + (string)item.Value + "'. [-Wtrigraphs]",
                                 startLoc.Concat(loc)));
                             builder.Append(item.Value);
                         }
