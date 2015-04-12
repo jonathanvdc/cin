@@ -47,10 +47,9 @@ namespace Flame.C.Preprocessor
         }
         public PreprocessedSourceBuilder Expand(ISourceDocument Document)
         {
-            var preprocessor = new PreprocessorInstance(this);
-            preprocessor.Reader.Append(Document);
-            preprocessor.Process();
-            return preprocessor.Builder;
+            var text = Document.Source;
+            var reader = new ChunkReader(new SourceChunk(text, new SourceLocation(Document, 0, text.Length)));
+            return Expand(reader.PreprocessCharacters(Environment.Log));
         }
     }
 }

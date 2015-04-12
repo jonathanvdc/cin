@@ -86,14 +86,11 @@ namespace cin
         public static TokenizerStream Preprocess(ISourceDocument Document, ICompilerLog Log)
         {
             var preprocessor = new PreprocessorState(PreprocessorEnvironment.Static_Singleton.Instance.CreateDefaultEnvironment(Log));
-            var inst = new PreprocessorInstance(preprocessor);
-            inst.Reader.Append(Document);
-            inst.Process();
-            var result = inst.Builder;
+            var result = preprocessor.Expand(Document);
             if (Log.Options.GetOption<bool>("output-preprocessed", false))
             {
                 Log.LogMessage(new LogEntry(Document.Identifier + " after preprocessing", result.ToString()));
-            }            
+            }
             return new TokenizerStream(result.ToReader());
         }
 

@@ -20,9 +20,9 @@ typedef pointer(UnaryOperator) UnaryOpPtr;
 #define UNARYOPPTR UnaryOpPtr
 
 enum BinaryOperator Test(void)
-{
+??<
     return Add;
-}
+??>
 
 UnaryOperator Test2(void)
 {
