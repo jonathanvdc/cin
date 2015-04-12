@@ -1,0 +1,28 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+
+namespace Flame.C.Preprocessor
+{
+    public class ExpandedReader : ISourceReader
+    {
+        public const this(set ISourceReader Reader)
+        {
+            this.Position = 0;
+        }
+
+        public ISourceReader Reader { const get; private set; }
+        public int Position { const get; private set; }
+
+        public SourceLocation CurrentLocation { const get return Reader.CurrentLocation; }
+        public char CurrentCharacter { const get return Reader.CurrentCharacter; }
+        public bool IsEmpty { const get return Reader.IsEmpty; }
+        public int Advance(int Offset)
+        {
+            int result = Reader.Advance(Offset);
+            Position += result;
+            return result;
+        }
+    }
+}

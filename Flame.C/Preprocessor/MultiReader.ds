@@ -63,7 +63,14 @@ namespace Flame.C.Preprocessor
 
         public SourceLocation CurrentLocation
         {
-            const get return CurrentReader.CurrentLocation;
+            const get
+            {
+                if (IsEmpty)
+                {
+                    return readers[readers.Count - 1].CurrentLocation;
+                }
+                else return CurrentReader.CurrentLocation;
+            }
         }
 
         public bool IsEmpty

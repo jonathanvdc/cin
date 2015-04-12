@@ -264,7 +264,7 @@ namespace Flame.C.Lexer
 
         public static Token Combine(this Token First, Token Second, TokenType Type)
         {
-        	var tkn = new Token(Type, First.TokenValue + Second.TokenValue, First.SourceDocument, First.Position);
+        	var tkn = new Token(Type, First.TokenValue + Second.TokenValue, First.Location.Concat(Second.Location));
         	return new RelevantToken(Enumerable.Concat<Token>(First.GetAllTrivia(), Second.GetAllTrivia()), tkn);
         }
 

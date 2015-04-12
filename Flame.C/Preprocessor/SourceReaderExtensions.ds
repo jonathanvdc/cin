@@ -112,13 +112,13 @@ namespace Flame.C.Preprocessor
 
         public static string ReadIdentifier(this ISourceReader Reader)
         {
-            if (!IsIdentifierElement(Reader.CurrentCharacter))
+            if (!IsIdentifierFirstElement(Reader.CurrentCharacter))
             {
                 return "";
             }
             var sb = new StringBuilder();
             sb.Append(Reader.Read());
-            while (!Reader.IsEmpty && IsIdentifierFirstElement(Reader.CurrentCharacter))
+            while (!Reader.IsEmpty && IsIdentifierElement(Reader.CurrentCharacter))
             {
                 sb.Append(Reader.Read());
             }

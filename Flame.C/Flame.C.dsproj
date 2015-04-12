@@ -46,6 +46,7 @@
       <Compile Include="Preprocessor/DefineBody.ds" />
       <Compile Include="Preprocessor/DefineDirective.ds" />
       <Compile Include="Preprocessor/DefineDirectiveParser.ds" />
+      <Compile Include="Preprocessor/ExpandedReader.ds" />
       <Compile Include="Preprocessor/IDirective.ds" />
       <Compile Include="Preprocessor/IDirectiveParser.ds" />
       <Compile Include="Preprocessor/ISourceReader.ds" />

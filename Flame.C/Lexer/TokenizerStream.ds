@@ -2,18 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Flame.Compiler;
+using Flame.C.Preprocessor;
 
 namespace Flame.C.Lexer
 {
 	public class TokenizerStream : ITokenStream
 	{
-		public const this(set ISourceDocument SourceDocument)
+		public const this(ISourceReader Reader)
 		{
-			this.Code = SourceDocument.Source;
-			Initialize();
-		}
-		public const this(set string Code, set ISourceDocument SourceDocument)
-		{
+			this.Reader = new ExpandedReader(Reader);
 			Initialize();
 		}
 
@@ -108,182 +105,87 @@ namespace Flame.C.Lexer
 			this.operators2["/="] = TokenType.SlashEquals;
 		}
 
-		public string Code { const get; private set; }
-		public ISourceDocument SourceDocument { const get; private set; }
-		private int pos;
+		public ExpandedReader Reader { const get; private set; }
+
 		private List<Token> tokens;
 		private int currentIndex;
 		private Dictionary<string, TokenType> keywords;
 		private Dictionary<char, TokenType> operators1;
 		private Dictionary<string, TokenType> operators2;
 
-		private static bool IsWhitespace(char Value)
-		{
-			return Value == ' ' || Value == '\n' || Value == '\t' || Value == '\r';
-		}
-
-		private static bool IsIdentifierElement(char Value)
-		{
-			return char.IsLetterOrDigit(Value) || Value == '_';
-		}
-
-		private static bool IsIdentifierFirstElement(char Value)
-		{
-			return char.IsLetter(Value) || Value == '_';
-		}
-
-		private static bool IsNumberToken(char Value)
-		{
-			return char.IsDigit(Value) || Value == '.' || Value == 'e' || Value == 'E' || Value == 'f' || Value == 'F';
-		}
-
-		private static bool IsHexIntegerStart(string Value)
-		{
-			return Value[0] == '0' && (Value[1] == 'x' || Value[1] == 'X');
-		}
-
-		private static bool IsBinaryIntegerStart(string Value)
-		{
-			return Value[0] == '0' && (Value[1] == 'b' || Value[1] == 'B');
-		}
-
-		private char CharAt(int Position)
-		{
-			if (Position >= 0 && Position < Code.Length)
-				return Code[Position];
-			else
-				return default(char);
-		}
-
 		private string ParseWhitespace()
 		{
-			int startPos = pos;
-			pos++;
-
-            if (pos == Code.Length) return Code.Substring(startPos, 1);
-
-			char nextChar = Code[pos];
-			while (pos < Code.Length && IsWhitespace(nextChar))
-			{
-				pos++;
-				if (pos >= Code.Length)
-					break;
-				nextChar = Code[pos];
-			}
-			return Code.Substring(startPos, pos - startPos);
+			return Reader.ReadWhitespace();
 		}
 
 		private string ParseIdentifier()
 		{
-			int startPos = pos;
-			pos++;
-			char nextChar = Code[pos];
-			while (pos < Code.Length && IsIdentifierElement(nextChar))
-			{
-				pos++;
-				if (pos >= Code.Length)
-					break;
-				nextChar = Code[pos];
-			}
-			return Code.Substring(startPos, pos - startPos);
+			return Reader.ReadIdentifier();
 		}
 
 		private string ParseUntil(int StartLength, string End)
 		{
-			int startPos = pos;
-			pos += StartLength;
-			string slice = Code.Substring(pos, End.Length);
-			while (pos < Code.Length && !slice.Equals(End))
-			{
-				pos++;
-				if (pos + End.Length - 1 < Code.Length)
-					slice = Code.Substring(pos, End.Length);
-			}
-			pos += slice.Length;
-			return Code.Substring(startPos, pos - startPos);
+			Reader.Advance(StartLength);
+			return Reader.ReadUntil(End);
 		}
 
 		private string ParseString(char Delimiter)
 		{
-			int startPos = pos;
-			pos++; // Skip first delimiter
-			char nextChar = Code[pos];
-			bool escaping = false;
-			while (nextChar != Delimiter || escaping)
-			{
-				if (nextChar == '\\')
-					escaping = !escaping;
-				else
-					escaping = false;
-				pos++;
-				if (pos >= Code.Length)
-					break;
-				nextChar = Code[pos];
-			}
-			pos++; // Move to next pos
-			return Code.Substring(startPos, pos - startPos);
+			return Reader.ReadString(Delimiter);
 		}
 
-		private void ParseInteger()
+		private string ParseInteger()
 		{
-			int startPos = pos;
-			char nextChar = Code[pos];
-			while (char.IsDigit(nextChar))
-			{
-				pos++;
-				if (pos >= Code.Length)
-					break;
-				nextChar = Code[pos];
-			}
+			return Reader.ReadInteger();
 		}
 
 		private Token ParseNumberToken()
 		{
-			int startPos = pos;
-			char nextChar = Code[pos];
 			TokenType type = TokenType.Integer;
 
-			if (nextChar == '.')
+			var sb = new StringBuilder();
+
+			if (Reader.CurrentCharacter == '.')
 			{
-				pos++;
+				sb.Append(Reader.Read());
 				type = TokenType.Float64;
 			}
 
-			ParseInteger();
+			sb.Append(ParseInteger());
 
-			if (pos < Code.Length && (Code[pos] == '.' && type != TokenType.Float64))
+			if (!Reader.IsEmpty && (Reader.CurrentCharacter == '.' && type != TokenType.Float64))
 			{
-				pos++;
+				sb.Append(Reader.Read());
 				type = TokenType.Float64;
-				ParseInteger();
+				sb.Append(ParseInteger());
 			}
 
-			if (pos < Code.Length && (Code[pos] == 'e' || Code[pos] == 'E'))
+			if (!Reader.IsEmpty && (Reader.CurrentCharacter == 'e' || Reader.CurrentCharacter == 'E'))
 			{
-				pos++;
-				if (pos < Code.Length && (Code[pos] == '+' || Code[pos] == '-'))
-					pos++;
+				sb.Append(Reader.Read());
+				if (!Reader.IsEmpty && (Reader.CurrentCharacter == '+' || Reader.CurrentCharacter == '-'))
+					sb.Append(Reader.Read());
 				type = TokenType.Float64;
-				ParseInteger();
+				sb.Append(ParseInteger());
 			}
 
-			if (pos < Code.Length && (Code[pos] == 'f' || Code[pos] == 'F'))
+			if (!Reader.IsEmpty && (Reader.CurrentCharacter == 'f' || Reader.CurrentCharacter == 'F'))
 		    {
-		    	pos++;
+				sb.Append(Reader.Read());
 		    	type = TokenType.Float32;
 		    }
 
-			return new Token(type, Code.Substring(startPos, pos - startPos));
+			return new Token(type, sb.ToString());
 		}
 
 		private Token ParseNextTokenValue()
 		{
-			char nextChar = Code[pos];
-			if (IsWhitespace(nextChar))
+			char nextChar = Reader.CurrentCharacter;
+			if (SourceReaderExtensions.IsWhitespace(nextChar))
 			{
 				return new Token(TokenType.Whitespace, ParseWhitespace());
 			}
-			else if (IsIdentifierFirstElement(nextChar))
+			else if (SourceReaderExtensions.IsIdentifierFirstElement(nextChar))
 			{
 			    string ident = ParseIdentifier();
 			    if (keywords.ContainsKey(ident)) return new Token(keywords[ident], ident);
@@ -301,66 +203,65 @@ namespace Flame.C.Lexer
 			{
 				return new Token(TokenType.PreprocessorDirective, ParseUntil(1, "\n"));
 			}
-			if (pos + 2 < Code.Length)
+			string peek = Reader.PeekString(3);
+			if (peek.Equals("///"))
+				return new Token(TokenType.DescriptionComment, ParseUntil(3, "\n"));
+
+			string slice = peek.Substring(0, Math.Min(2, peek.Length));
+			if (slice.Equals("//"))
 			{
-				string slice = Code.Substring(pos, 3);
-				if (slice.Equals("///"))
-					return new Token(TokenType.DescriptionComment, ParseUntil(3, "\n"));
+				return new Token(TokenType.LineComment, ParseUntil(2, "\n"));
 			}
-			if (pos + 1 < Code.Length)
+			else if (slice.Equals("/*"))
 			{
-				string slice = Code.Substring(pos, 2);
-				if (slice.Equals("//"))
-				{
-					return new Token(TokenType.LineComment, ParseUntil(2, "\n"));
-				}
-				else if (slice.Equals("/*"))
-				{
-					return new Token(TokenType.BigComment, ParseUntil(2, "*/"));
-				}
-				else if (operators2.ContainsKey(slice))
-				{
-					pos += 2;
-					return new Token(operators2[slice], slice);
-				}
-				else if (nextChar == '.' && char.IsDigit(slice[1]))
-				{
-					return ParseNumberToken();
-				}
-				else if (IsHexIntegerStart(slice))
-				{
-					int startPos = pos;
-				    pos += 2;
-				    ParseIdentifier();
-				    return new Token(TokenType.HexInteger, Code.Substring(startPos, pos - startPos));
-				}
-				else if (IsBinaryIntegerStart(slice))
-				{
-					int startPos = pos;
-				    pos += 2;
-				    ParseInteger();
-				    return new Token(TokenType.BinaryInteger, Code.Substring(startPos, pos - startPos));
-				}
+				return new Token(TokenType.BigComment, ParseUntil(2, "*/"));
 			}
-			if (operators1.ContainsKey(nextChar))
+			else if (operators2.ContainsKey(slice))
 			{
-				pos++;
-				return new Token(operators1[nextChar], nextChar.ToString());
+				Reader.Advance(2);
+				return new Token(operators2[slice], slice);
 			}
-			if (IsNumberToken(nextChar))
+			else if (nextChar == '.' && char.IsDigit(slice[1]))
 			{
 				return ParseNumberToken();
 			}
-			return new Token(TokenType.UNDEFINED, Code[pos - 1].ToString());
+			else if (SourceReaderExtensions.IsHexIntegerStart(slice))
+			{
+				Reader.Advance(2);
+			    string integer = ParseInteger();
+			    return new Token(TokenType.HexInteger, slice + integer);
+			}
+			else if (SourceReaderExtensions.IsBinaryIntegerStart(slice))
+			{
+				Reader.Advance(2);
+				string integer = ParseInteger();
+			    return new Token(TokenType.BinaryInteger, slice + integer);
+			}
+
+			if (operators1.ContainsKey(nextChar))
+			{
+				Reader.MoveNext();
+				return new Token(operators1[nextChar], nextChar.ToString());
+			}
+			if (SourceReaderExtensions.IsNumberToken(nextChar))
+			{
+				return ParseNumberToken();
+			}
+
+			Reader.MoveNext();
+			return new Token(TokenType.UNDEFINED, nextChar.ToString());
 		}
 
 		private Token ParseNextToken()
 		{
-			if (pos >= Code.Length)
-				return new Token(TokenType.EndOfFile, "", SourceDocument, pos);
-		    int startPos = pos;
+			var startLoc = Reader.CurrentLocation;
+
+			if (Reader.IsEmpty)
+				return new Token(TokenType.EndOfFile, "", startLoc);
+
 			Token tokenValue = ParseNextTokenValue();
-			var token = new Token(tokenValue.Type, tokenValue.TokenValue, SourceDocument, startPos);
+			var endLoc = Reader.CurrentLocation;
+			var token = new Token(tokenValue.Type, tokenValue.TokenValue, startLoc.Concat(endLoc));
 			tokens.Add(token);
 			return token;
 		}

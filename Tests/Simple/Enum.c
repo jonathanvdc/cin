@@ -17,6 +17,7 @@ typedef enum
 } UnaryOperator;
 
 typedef pointer(UnaryOperator) UnaryOpPtr;
+#define UNARYOPPTR UnaryOpPtr
 
 enum BinaryOperator Test(void)
 {
@@ -28,7 +29,7 @@ UnaryOperator Test2(void)
     return Negate;
 }
 
-UnaryOpPtr Test3(void)
+UNARYOPPTR Test3(void)
 {
     return 0;
 }

@@ -88,17 +88,13 @@ namespace cin
             var preprocessor = new PreprocessorState(PreprocessorEnvironment.Static_Singleton.Instance.CreateDefaultEnvironment(Log));
             var inst = new PreprocessorInstance(preprocessor);
             inst.Reader.Append(Document);
-            try
-            {
-                inst.Process();
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }            
+            inst.Process();
             var result = inst.Builder;
-            Log.LogMessage(new LogEntry(Document.Identifier + " after preprocessing", result.ToString()));
-            return new TokenizerStream(Document);
+            if (Log.Options.GetOption<bool>("output-preprocessed", false))
+            {
+                Log.LogMessage(new LogEntry(Document.Identifier + " after preprocessing", result.ToString()));
+            }            
+            return new TokenizerStream(result.ToReader());
         }
 
         public static Task<CompilationUnit> ParseCompilationUnitAsync(IProjectSourceItem SourceItem, SyntaxAssembly Assembly, CompilationParameters Parameters)

@@ -21,7 +21,7 @@ namespace Flame.C.Preprocessor
             const get
             {
                 var loc = Chunk.Location;
-                return new SourceLocation(loc.Document, loc.Position + Position, 1);
+                return new SourceLocation(loc.Document, loc.Position + Position, 0);
             }
         }
 
