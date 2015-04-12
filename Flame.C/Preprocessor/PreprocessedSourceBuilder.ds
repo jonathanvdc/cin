@@ -73,7 +73,14 @@ namespace Flame.C.Preprocessor
 
         public const bool EndsWith(string Value)
         {
+            Unflush();
             return currentBuilder.EndsWith(Value);
+        }
+
+        public const bool EndsWith(char Value)
+        {
+            Unflush();
+            return currentBuilder.Length > 0 && currentBuilder[currentBuilder.Length - 1] == Value;
         }
 
         private char GetUnflushedLastCharacter()
@@ -88,6 +95,11 @@ namespace Flame.C.Preprocessor
             {
                 currentBuilder.Remove(currentBuilder.Length - 1, 1);
             }
+        }
+
+        public void Append(char Value)
+        {
+            currentBuilder.Append(Value);
         }
 
         public void Append(char Value, SourceLocation Location)

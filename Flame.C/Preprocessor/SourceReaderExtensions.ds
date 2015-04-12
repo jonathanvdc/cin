@@ -185,6 +185,40 @@ namespace Flame.C.Preprocessor
             return builder.ToReader();
         }
 
+        public static ISourceReader PreprocessCharacters(this ISourceReader Reader)
+        {
+            var trigraphs = new Dictionary<string, char>();
+            trigraphs["??/"] = '\\';
+            trigraphs["??="] = '#';
+            trigraphs["??'"] = '^';
+            trigraphs["??("] = '[';
+            trigraphs["??)"] = ']';
+            trigraphs["??!"] = '|';
+            trigraphs["??<"] = '{';
+            trigraphs["??>"] = '}';
+            trigraphs["??-"] = '~';
+
+            var builder = new PreprocessedSourceBuilder();
+            while (!Reader.IsEmpty)
+            {
+                Reader.ReadTo(builder);
+                foreach (var item in trigraphs)
+                {
+                    if (builder.EndsWith(item.Key))
+                    {
+                        builder.Pop(item.Key.Length);
+                        builder.Append(item.Value);
+                    }
+                }
+                if (builder.EndsWith('\\') && Reader.ExpectNoWhitespace('\n'))
+                {
+                    builder.Pop(1);
+                    builder.Append(' ');
+                }
+            }
+            return builder.ToReader();
+        }
+
         public static string ReadString(this ISourceReader Reader, char Delimiter)
         {
             if (Reader.CurrentCharacter != Delimiter)
@@ -212,13 +246,19 @@ namespace Flame.C.Preprocessor
 
         public static bool ExpectNoWhitespace(this ISourceReader Reader, char Value)
         {
-            Reader.ReadWhitespace();
+            int parsedLength = 0;
+            while (!Reader.IsEmpty && Reader.CurrentCharacter != Value && IsWhitespace(Reader.CurrentCharacter))
+            {
+                Reader.MoveNext();
+                parsedLength++;
+            }
             if (!Reader.IsEmpty && Reader.CurrentCharacter == Value)
             {
                 Reader.MoveNext();
                 return true;
             }
-            else return false;
+            Reader.Advance(-parsedLength);
+            return false;
         }
 
         public static SourceChunk[] ReadChunksToEnd(this ISourceReader Reader)

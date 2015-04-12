@@ -89,7 +89,8 @@ namespace Flame.C.Preprocessor
         public void Append(ISourceDocument Document)
         {
             var text = Document.Source;
-            Append(new SourceChunk(text, new SourceLocation(Document, 0, text.Length)));
+            var reader = new ChunkReader(new SourceChunk(text, new SourceLocation(Document, 0, text.Length)));
+            Append(reader.PreprocessCharacters());
         }
     }
 }
