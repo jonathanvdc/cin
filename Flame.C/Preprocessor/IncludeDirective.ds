@@ -1,0 +1,105 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+using Flame.Syntax;
+using Flame.C.Lexer;
+using Flame.Syntax.C;
+
+namespace Flame.C.Preprocessor
+{
+    public class IncludeDirective : IDirective, ISourceSyntax
+    {
+        public const this(set Token HashToken, set Token IncludeToken, set SourceLocation NameLocation,
+            set string IncludeName, set bool IsExternal);
+
+        public Token HashToken { const get; private set; }
+        public Token IncludeToken { const get; private set; }
+        public SourceLocation NameLocation { const get; private set; }
+
+        public string IncludeName { const get; private set; }
+        public bool IsExternal { const get; private set; }
+
+        public bool IsImport
+        {
+            const get return IncludeToken.TokenValue.Equals("import");
+        }
+
+        public bool IsIncludeNext
+        {
+            const get return IncludeToken.TokenValue.Equals("include_next");
+        }
+
+        public SourceLocation Location
+        {
+            const get
+            {
+                return HashToken.Location
+                                .Concat(IncludeToken.Location)
+                                .Concat(NameLocation);
+            }
+        }
+
+        private ISourceFile GetFile(IncludeManager Includes)
+        {
+            if (IsIncludeNext)
+            {
+                return Includes.GetIncludeNextFile(IncludeName, IsExternal);
+            }
+            else if (IsExternal)
+            {
+                return Includes.GetIncludeExternalFile(IncludeName);
+            }
+            else
+            {
+                return Includes.GetIncludeFile(IncludeName);
+            }
+        }
+
+        public void Apply(PreprocessorInstance Processor)
+        {
+            var file = GetFile(Processor.State.Includes);
+            if (file == null)
+            {
+                Processor.State.Environment.Log.LogError(new LogEntry("Unknown include file",
+                    "Include file '" + IncludeName + "' was not found.",
+                    NameLocation));
+            }
+            else if (IsImport)
+            {
+                Processor.Import(file);
+            }
+            else
+            {
+                Processor.Include(file);
+            }
+        }
+
+        public override const string ToString()
+        {
+            return GetCode().ToString();
+        }
+
+        public CodeBuilder GetCode()
+        {
+            var cb = new CodeBuilder();
+            cb.Append(HashToken.ToString());
+            cb.Append(IncludeToken.ToString());
+            cb.Append(' ');
+            if (IsExternal)
+            {
+                cb.Append('<');
+                cb.Append(IncludeName);
+                cb.Append('>');
+            }
+            else
+            {
+                cb.Append('"');
+                cb.Append(IncludeName);
+                cb.Append('"');
+            }
+
+            return cb;
+        }
+    }
+}

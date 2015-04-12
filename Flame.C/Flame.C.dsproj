@@ -31,7 +31,7 @@
   </ItemGroup>
   <ItemGroup Name="Lexer">
       <Compile Include="Lexer/Token.ds" />
-      <Compile Include="Lexer/TokenType.ds" />      
+      <Compile Include="Lexer/TokenType.ds" />
       <Compile Include="Lexer/TokenIdentifier.ds" />
       <Compile Include="Lexer/ITokenStream.ds" />
       <Compile Include="Lexer/MemoryTokenStream.ds" />
@@ -51,6 +51,11 @@
       <Compile Include="Preprocessor/ExpandedReader.ds" />
       <Compile Include="Preprocessor/IDirective.ds" />
       <Compile Include="Preprocessor/IDirectiveParser.ds" />
+      <Compile Include="Preprocessor/IIncludeConfiguration.ds" />
+      <Compile Include="Preprocessor/IncludeDirective.ds" />
+      <Compile Include="Preprocessor/IncludeDirectiveParser.ds" />
+      <Compile Include="Preprocessor/IncludeManager.ds" />
+      <Compile Include="Preprocessor/ISourceFile.ds" />
       <Compile Include="Preprocessor/ISourceReader.ds" />
       <Compile Include="Preprocessor/MultiReader.ds" />
       <Compile Include="Preprocessor/PreprocessedDocument.ds" />

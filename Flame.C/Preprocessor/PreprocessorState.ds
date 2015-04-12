@@ -8,12 +8,18 @@ namespace Flame.C.Preprocessor
 {
     public class PreprocessorState
     {
-        public const this(set PreprocessorEnvironment Environment)
+        public const this(set PreprocessorEnvironment Environment, ISourceFile File)
+        {
+            this.defs = new List<DefineDirective>();
+            this.Includes = new IncludeManager(File);
+        }
+        public const this(set PreprocessorEnvironment Environment, set IncludeManager Includes)
         {
             this.defs = new List<DefineDirective>();
         }
 
         public PreprocessorEnvironment Environment { const get; private set; }
+        public IncludeManager Includes { const get; private set; }
 
         private List<DefineDirective> defs;
         public [DefineDirective] Definitions { const get return defs; }

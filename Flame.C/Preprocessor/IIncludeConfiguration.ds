@@ -1,0 +1,12 @@
+using System;
+using Flame.Syntax;
+
+namespace Flame.C.Preprocessor
+{
+    public interface IIncludeConfiguration
+    {
+        ISourceFile GetStandardIncludeFile(string Path);
+        ISourceFile GetAdditionalIncludeFile(string Path);
+        ISourceFile GetLocalIncludeFile(string Path);
+    }
+}

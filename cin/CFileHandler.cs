@@ -83,13 +83,14 @@ namespace cin
             }
         }
 
-        public static TokenizerStream Preprocess(ISourceDocument Document, ICompilerLog Log)
+        public static TokenizerStream Preprocess(ISourceDocument Document, CompilationParameters Parameters)
         {
-            var preprocessor = new PreprocessorState(PreprocessorEnvironment.Static_Singleton.Instance.CreateDefaultEnvironment(Log));
+            var sourceFile = new SourceFile(Document, Parameters);
+            var preprocessor = new PreprocessorState(PreprocessorEnvironment.Static_Singleton.Instance.CreateDefaultEnvironment(Parameters.Log), sourceFile);
             var result = preprocessor.Expand(Document);
-            if (Log.Options.GetOption<bool>("output-preprocessed", false))
+            if (Parameters.Log.Options.GetOption<bool>("output-preprocessed", false))
             {
-                Log.LogMessage(new LogEntry(Document.Identifier + " after preprocessing", result.ToString()));
+                Parameters.Log.LogMessage(new LogEntry(Document.Identifier + " after preprocessing", result.ToString()));
             }
             return new TokenizerStream(result.ToStream());
         }
@@ -104,7 +105,7 @@ namespace cin
                 {
                     return null;
                 }
-                var parser = Preprocess(code, Parameters.Log);
+                var parser = Preprocess(code, Parameters);
                 var unit = ParseCompilationUnit(parser, Assembly);
                 Parameters.Log.LogEvent(new LogEntry("Status", "Parsed " + SourceItem.SourceIdentifier));
                 return unit;

@@ -1,0 +1,14 @@
+using System;
+using Flame.Compiler;
+using Flame.Syntax;
+
+namespace Flame.C.Preprocessor
+{
+    public interface ISourceFile
+    {
+        public string Identifier { const get; }
+        public IIncludeConfiguration IncludeConfiguration { const get; }
+
+        public ISourceDocument GetDocument();
+    }
+}

@@ -1,0 +1,51 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+using Flame.Syntax;
+using Flame.C.Lexer;
+using Flame.Syntax.C;
+
+namespace Flame.C.Preprocessor
+{
+    public static class IncludeDirectiveParser : IDirectiveParser
+    {
+        public const bool Matches(string Name)
+        {
+            string lower = Name.ToLower();
+            return lower.Equals("include") || lower.Equals("include_next") || lower.Equals("import");
+        }
+        public IDirective Parse(Token HashToken, Token Name, PreprocessorState State, ITokenStream Reader)
+        {
+            var peek = Reader.PeekNoTrivia();
+            if (peek.Type == TokenType.String || peek.Type == TokenType.Char)
+            {
+                var token = Reader.NextNoTrivia();
+                string includePath = token.TokenValue.Substring(1, token.TokenValue.Length - 2);
+                return new IncludeDirective(HashToken, Name, token.Location, includePath, false);
+            }
+            else if (peek.Type == TokenType.LessThan)
+            {
+                var sb = new StringBuilder();
+                var loc = Reader.NextNoTrivia().Location;
+                peek = Reader.Peek();
+                while (peek.Type != TokenType.EndOfFile && peek.Type != TokenType.GreaterThan)
+                {
+                    var token = Reader.Next();
+                    loc = loc.Concat(token.Location);
+                    sb.Append(token.TokenValue);
+                    peek = Reader.Peek();
+                }
+                loc = loc.Concat(Reader.Next().Location);
+                return new IncludeDirective(HashToken, Name, loc, sb.ToString(), true);
+            }
+            else
+            {
+                State.Environment.Log.LogError(new LogEntry("Invalid '#" + Name.TokenValue + "' directive",
+                    "'#" + Name.TokenValue + "' directive could not be parsed because no include path was found.",
+                    HashToken.Location.Concat(Name.Location)));
+                return null;
+            }
+        }
+    }
+}

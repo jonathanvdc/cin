@@ -1,0 +1,103 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Flame.Syntax;
+
+namespace Flame.C.Preprocessor
+{
+    public class IncludeManager
+    {
+        public const this(ISourceFile CurrentFile)
+        {
+            this.included = new HashSet<string>();
+            this.includeOnce = new HashSet<string>();
+            this.inclusionOrder = new Stack<ISourceFile>();
+            PushInclude(CurrentFile);
+        }
+
+        private HashSet<string> included;
+        private HashSet<string> includeOnce;
+        private Stack<ISourceFile> inclusionOrder;
+
+        public ISourceFile CurrentFile
+        {
+            const get
+            {
+                return inclusionOrder.Peek();
+            }
+        }
+
+        public IIncludeConfiguration Configuration { const get return CurrentFile.IncludeConfiguration; }
+        public [string] IncludedPaths { const get return included; }
+        public [string] IncludeOncePaths { const get return includeOnce; }
+
+        public const bool IsIncluded(string Path)
+        {
+            return included.Contains(Path);
+        }
+        public const bool IsIncluded(ISourceFile File)
+        {
+            return IsIncluded(File.Identifier);
+        }
+
+        public const bool IsIncludeOnce(string Path)
+        {
+            return includeOnce.Contains(Path);
+        }
+        public const bool IsIncludeOnce(ISourceFile File)
+        {
+            return IsIncludeOnce(File.Identifier);
+        }
+
+        public void PushInclude(ISourceFile File)
+        {
+            this.inclusionOrder.Push(File);
+            this.included.Add(File.Identifier);
+        }
+
+        public void PopInclude()
+        {
+            this.inclusionOrder.Pop();
+        }
+
+        public void MarkIncludeOnce()
+        {
+            this.includeOnce.Add(CurrentFile.Identifier);
+        }
+
+        public const ISourceFile GetIncludeExternalFile(string Path)
+        {
+            var additionalFile = Configuration.GetAdditionalIncludeFile(Path);
+            if (additionalFile != null)
+                return additionalFile;
+
+            var stdFile = Configuration.GetStandardIncludeFile(Path);
+            if (stdFile != null)
+                return stdFile;
+
+            return Configuration.GetLocalIncludeFile(Path);
+        }
+
+        public const ISourceFile GetIncludeFile(string Path)
+        {
+            var localFile = Configuration.GetLocalIncludeFile(Path);
+            if (localFile != null)
+                return localFile;
+            var additionalFile = Configuration.GetAdditionalIncludeFile(Path);
+            if (additionalFile != null)
+                return additionalFile;
+
+            return Configuration.GetStandardIncludeFile(Path);
+        }
+
+        public const ISourceFile GetIncludeNextFile(string Path, bool IsExternal)
+        {
+            var additionalFile = Configuration.GetAdditionalIncludeFile(Path);
+            if (additionalFile != null)
+                return additionalFile;
+
+            return Configuration.GetStandardIncludeFile(Path);
+        }
+    }
+}

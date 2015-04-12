@@ -8,9 +8,9 @@ namespace Flame.C.Preprocessor
 {
     public class PreprocessorInstance
     {
-        public const this(set ITokenStream Reader, PreprocessorEnvironment Environment)
+        public const this(set ITokenStream Reader, PreprocessorEnvironment Environment, ISourceFile File)
         {
-            this.State = new PreprocessorState(Environment);
+            this.State = new PreprocessorState(Environment, File);
             this.Builder = new TokenStreamBuilder();
         }
         public const this(set ITokenStream Reader, set PreprocessorState State)
@@ -101,6 +101,27 @@ namespace Flame.C.Preprocessor
             while (!Reader.IsEmpty)
             {
                 ProcessItem();
+            }
+        }
+
+        public void Include(ISourceFile File)
+        {
+            if (!State.Includes.IsIncludeOnce(File))
+            {
+                State.Includes.PushInclude(File);
+                Builder.Append(State.Expand(File.GetDocument()));
+                State.Includes.PopInclude();
+            }
+        }
+
+        public void Import(ISourceFile File)
+        {
+            if (!State.Includes.IsIncludeOnce(File))
+            {
+                State.Includes.PushInclude(File);
+                State.Includes.MarkIncludeOnce();
+                Builder.Append(State.Expand(File.GetDocument()));
+                State.Includes.PopInclude();
             }
         }
     }
