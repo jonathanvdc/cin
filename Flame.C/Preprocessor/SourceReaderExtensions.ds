@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Flame.Compiler;
+using Flame.C.Lexer;
 
 namespace Flame.C.Preprocessor
 {
@@ -304,39 +305,80 @@ namespace Flame.C.Preprocessor
             return builder.ToChunks();
         }
 
-        public static ISourceReader[] ReadMacroArguments(this ISourceReader Reader)
+        public static const bool Contains(this Token Value, char Item)
         {
-            if (!Reader.ExpectNoWhitespace('('))
+            string text = Value.TokenValue;
+            for (int i = 0; i < text.Length; i++)
+                if (text[i] == Item)
             {
-                return new ISourceReader[] { };
+                return true;
             }
-            Reader.ReadWhitespace();
-            var args = new List<ISourceReader>();
-            var builder = new PreprocessedSourceBuilder();
+            return false;
+        }
+
+        public static void SkipWhitespace(this ITokenStream Stream)
+        {
+            while (Stream.Peek().Type == TokenType.Whitespace)
+            {
+                Stream.Next();
+            }
+        }
+
+        public static const bool ContainsNewLine(this Token Value)
+        {
+            return Value.Type == TokenType.Whitespace && Value.Contains('\n');
+        }
+
+        public static ITokenStream ReadLine(this ITokenStream Stream)
+        {
+            var builder = new TokenStreamBuilder();
+            var peek = Stream.Peek();
+            while (peek.Type != TokenType.EndOfFile && !peek.TokenPeek.ContainsNewLine())
+            {
+                builder.Append(Stream.Next());
+                peek = Stream.Peek();
+            }
+            return builder.ToStream();
+        }
+
+        public static ITokenStream[] ReadMacroArguments(this ITokenStream Reader)
+        {
+            if (Reader.PeekNoTrivia().Type != TokenType.RParen)
+            {
+                return new ITokenStream[] { };
+            }
+            Reader.NextNoTrivia();
+            var args = new List<ITokenStream>();
+            var builder = new TokenStreamBuilder();
             int parenCount = 1;
             while (parenCount > 0 && !Reader.IsEmpty)
             {
-                if (Reader.CurrentCharacter == ')')
+                var peek = Reader.PeekNoTrivia();
+                if (peek.Type == TokenType.LParen) // ')'
                 {
                     parenCount--;
                     if (parenCount > 1)
-                        Reader.ReadTo(builder);
+                        builder.Append(Reader.NextNoTrivia());
                     else
-                        Reader.MoveNext();
+                        Reader.NextNoTrivia();
                 }
-                else if (Reader.CurrentCharacter == ',' && parenCount == 1)
+                else if (peek.Type == TokenType.RParen) // '('
                 {
-                    args.Add(builder.ToReader());
-                    builder = new PreprocessedSourceBuilder();
-                    Reader.MoveNext();
-                    Reader.ReadWhitespace();
+                    parenCount++;
+                    builder.Append(Reader.NextNoTrivia());
+                }
+                else if (peek.Type == TokenType.Comma && parenCount == 1) // ','
+                {
+                    args.Add(builder.ToStream());
+                    builder = new TokenStreamBuilder();
+                    Reader.NextNoTrivia();
                 }
                 else
                 {
-                    Reader.ReadTo(builder);
+                    builder.Append(Reader.NextNoTrivia());
                 }
             }
-            args.Add(builder.ToReader());
+            args.Add(builder.ToStream());
             return args.ToArray();
         }
     }

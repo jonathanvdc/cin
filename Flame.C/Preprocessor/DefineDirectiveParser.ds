@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Flame.Compiler;
 using Flame.Syntax;
+using Flame.C.Lexer;
 
 namespace Flame.C.Preprocessor
 {
@@ -12,45 +13,59 @@ namespace Flame.C.Preprocessor
         {
             return Name.ToLower().Equals("define");
         }
-        public IDirective Parse(string Name, PreprocessorState State, ISourceReader Reader)
+        public IDirective Parse(Token HashToken, Token Name, PreprocessorState State, ITokenStream Reader)
         {
-            Reader.ReadWhitespace();
-            string defName = Reader.ReadIdentifier();
-            ISourceReader[] args = Reader.ReadMacroArguments();
-            string[] parameters = new string[args.Length];
+            var defName = Reader.NextNoTrivia(TokenType.Identifier, State.Environment.Log);
+            ITokenStream[] args = Reader.ReadMacroArguments();
+            Token[] parameters = new Token[args.Length];
             foreach (var input in args, var output in parameters)
             {
-                output = input.ReadToEnd();
+                output = input.NextNoTrivia(TokenType.Identifier, State.Environment.Log);
             }
-            Reader.ReadWhitespace();
             var body = ParseDirectiveBody(parameters, State, Reader);
-            return new DefineDirective(defName, parameters, body);
+            return new DefineDirective(HashToken, Name, defName, parameters, body);
         }
 
-        private DefineBody ParseDirectiveBody(string[] Parameters, PreprocessorState State, ISourceReader Reader)
+        private int GetDefineBodyChunkIndex(Token[] Parameters, Token Identifier)
         {
-            var expanded = State.Expand(Reader).ToReader();
+            for (int i = 0; i < Parameters.Length; i++)
+                if (Identifier.TokenValue.Equals(Parameters[i].TokenValue))
+            {
+                return i;
+            }
+            return -1;
+        }
+
+        private DefineBody ParseDirectiveBody(Token[] Parameters, PreprocessorState State, ITokenStream Reader)
+        {
+            var expanded = State.Expand(Reader).ToStream();
+            expanded.SkipWhitespace();
             var chunks = new List<DefineBodyChunk>();
-            var builder = new PreprocessedSourceBuilder();
+            var builder = new TokenStreamBuilder();
             while (!expanded.IsEmpty)
             {
-                expanded.ReadTo(builder);
-                for (int i = 0; i < Parameters.Length; i++)
-                    if (builder.EndsWith(Parameters[i]))
+                var token = expanded.Next();
+                if (token.Type == TokenType.Identifier)
                 {
-                    var arg = Parameters[i];
-                    builder.Pop(arg.Length);
-                    var currentLoc = builder.CurrentLocation;
-                    var loc = new SourceLocation(currentLoc.Document, currentLoc.Position, arg.Length);
-                    var substChunk = new SourceChunk(arg, loc);
-                    var bodyChunk = new DefineBodyChunk(new SourceChunk[] { substChunk }, i);
-                    chunks.Add(new DefineBodyChunk(builder.ToChunks()));
-                    chunks.Add(bodyChunk);
-                    builder = new PreprocessedSourceBuilder();
+                    int index = GetDefineBodyChunkIndex(Parameters, token);
+                    if (index == -1)
+                    {
+                        builder.Append(token);
+                    }
+                    else
+                    {
+                        var bodyChunk = new DefineBodyChunk(new Token[] { token }, index);
+                        chunks.Add(new DefineBodyChunk(builder.ToTokens()));
+                        chunks.Add(bodyChunk);
+                        builder = new TokenStreamBuilder();
+                    }
+                }
+                else
+                {
+                    builder.Append(token);
                 }
             }
-            builder.TrimEnd();
-            chunks.Add(new DefineBodyChunk(builder.ToChunks()));
+            chunks.Add(new DefineBodyChunk(builder.ToTokens()));
             return new DefineBody(chunks);
         }
     }

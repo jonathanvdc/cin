@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Flame.Compiler;
+using Flame.C.Lexer;
 
 namespace Flame.C.Preprocessor
 {
@@ -26,10 +27,10 @@ namespace Flame.C.Preprocessor
         {
             return GetParser(Name) != null;
         }
-        public IDirective Parse(string Name, PreprocessorState State, ISourceReader Reader)
+        public IDirective Parse(Token HashToken, Token Name, PreprocessorState State, ITokenStream Reader)
         {
-            var parser = GetParser(Name);
-            return parser.Parse(Name, State, Reader);
+            var parser = GetParser(Name.TokenValue);
+            return parser.Parse(HashToken, Name, State, Reader);
         }
 
         public static const PreprocessorEnvironment CreateDefaultEnvironment(ICompilerLog Log)

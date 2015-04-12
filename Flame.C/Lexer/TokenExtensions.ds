@@ -7,6 +7,11 @@ namespace Flame.C.Lexer
 {
 	public static class TokenExtensions
 	{
+		public static const bool IsEmpty[this ITokenStream Tokens]
+		{
+			const get return Tokens.Peek().Type == TokenType.EndOfFile;
+		}
+
 		#region GetLeadingTrivia
 
 		public static const [Token] GetLeadingTrivia(this Token Item)

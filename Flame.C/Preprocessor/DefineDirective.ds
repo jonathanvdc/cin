@@ -8,13 +8,46 @@ using Flame.Syntax.C;
 
 namespace Flame.C.Preprocessor
 {
-    public class DefineDirective : IDirective
+    public class DefineDirective : IDirective, ISourceSyntax
     {
-        public const this(set string Name, set string[] Parameters, set DefineBody Body);
+        public const this(set Token HashToken, set Token DefineToken, set Token NameToken,
+            set Token[] Parameters, set DefineBody Body);
 
-        public string Name { const get; private set; }
-        public string[] Parameters { const get; private set; }
+        public Token HashToken { const get; private set; }
+        public Token DefineToken { const get; private set; }
+        public Token NameToken { const get; private set; }
+        public Token[] Parameters { const get; private set; }
         public DefineBody Body { const get; private set; }
+
+        public SourceLocation Location
+        {
+            const get
+            {
+                var result = HashToken.Location
+                                      .Concat(DefineToken.Location)
+                                      .Concat(NameToken.Location);
+                foreach (var item in Parameters)
+                {
+                    result = result.Concat(item.Location);
+                }
+                return result.Concat(Body.Location);
+            }
+        }
+
+        public string Name { const get return NameToken.TokenValue; }
+
+        public string[] ParameterNames
+        {
+            const get
+            {
+                var results = new string[Parameters.Length];
+                foreach (var input in Parameters, var output in results)
+                {
+                    output = input.TokenValue;
+                }
+                return results;
+            }
+        }
 
         public bool HasParameters
         {
@@ -34,8 +67,9 @@ namespace Flame.C.Preprocessor
         public CodeBuilder GetCode()
         {
             var cb = new CodeBuilder();
-            cb.Append("#define ");
-            cb.Append(Name);
+            cb.Append(HashToken.ToString());
+            cb.Append(DefineToken.ToString());
+            cb.Append(Name.ToString());
             if (HasParameters)
             {
                 cb.Append('(');
@@ -45,7 +79,7 @@ namespace Flame.C.Preprocessor
                     {
                         cb.Append(", ");
                     }
-                    cb.Append(Parameters[i]);
+                    cb.Append(Parameters[i].ToString());
                 }
                 cb.Append(')');
             }

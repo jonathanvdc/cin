@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 using Flame.Compiler;
 using Flame.Syntax;
 using Flame.C.Lexer;
@@ -10,16 +11,29 @@ namespace Flame.C.Preprocessor
 {
     public struct DefineBodyChunk
     {
-        public const this(set SourceChunk[] Source, set int ParameterIndex);
-        public const this(set SourceChunk[] Source)
+        public const this(set Token[] Source, set int ParameterIndex);
+        public const this(set Token[] Source)
         {
             this.ParameterIndex = -1;
         }
 
         public int ParameterIndex { const get; private set; }
-        public SourceChunk[] Source { const get; private set; }
+        public Token[] Source { const get; private set; }
 
-        public const SourceChunk[] Substitute(SourceChunk[][] Arguments)
+        public SourceLocation Location
+        {
+            const get
+            {
+                var result = Source[0].Location;
+                for (int i = 1; i < Source.Length; i++)
+                {
+                    result = result.Concat(Source[i].Location);
+                }
+                return result;
+            }
+        }
+
+        public const Token[] Substitute(Token[][] Arguments)
         {
             if (ParameterIndex < 0 || ParameterIndex >= Arguments.Length)
             {
@@ -32,20 +46,40 @@ namespace Flame.C.Preprocessor
         }
     }
 
-    public class DefineBody : ISyntaxNode
+    public class DefineBody : ISourceSyntax
     {
         public const this(set [DefineBodyChunk] Chunks);
 
         public [DefineBodyChunk] Chunks { const get; private set; }
 
-        public const [SourceChunk] Substitute(SourceChunk[][] Arguments)
+        public SourceLocation Location
         {
-            var results = new List<SourceChunk>();
+            const get
+            {
+                var firstChunk = Enumerable.FirstOrDefault<DefineBodyChunk>(Chunks);
+
+                if (firstChunk == null)
+                {
+                    return null;
+                }
+
+                var result = firstChunk.Location;
+                foreach (var item in Chunks)
+                {
+                    result = result.Concat(item.Location);
+                }
+                return result;
+            }
+        }
+
+        public const Token[] Substitute(Token[][] Arguments)
+        {
+            var results = new List<Token>();
             foreach (var item in Chunks)
             {
                 results.AddRange(item.Substitute(Arguments));
             }
-            return results;
+            return results.ToArray();
         }
 
         public CodeBuilder GetCode()
@@ -55,7 +89,7 @@ namespace Flame.C.Preprocessor
             {
                 foreach (var src in item.Source)
                 {
-                    cb.Append(src.Source);
+                    cb.Append(src.ToString());
                 }
             }
             return cb;

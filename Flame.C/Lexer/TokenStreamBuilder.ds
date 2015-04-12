@@ -1,0 +1,52 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+
+namespace Flame.C.Lexer
+{
+    public class TokenStreamBuilder
+    {
+        public const this()
+        {
+            this.tokens = new List<Token>();
+        }
+
+        private List<Token> tokens;
+
+        public [Token] Tokens { const get return tokens; }
+        public int Count { const get return tokens.Count; }
+        public Token this[int Index]
+        {
+            const get return tokens[Index];
+        }
+
+        public void Append(Token Value)
+        {
+            tokens.Add(Value);
+        }
+        public void Append([Token] Values)
+        {
+            tokens.AddRange(Values);
+        }
+        public void Append(TokenStreamBuilder Other)
+        {
+            tokens.AddRange(Other.tokens);
+        }
+
+        public const Token[] ToTokens()
+        {
+            return tokens.ToArray();
+        }
+
+        public const ITokenStream ToStream()
+        {
+            return new MemoryTokenStream(ToTokens());
+        }
+
+        public override const string ToString()
+        {
+            return ToStream().ToString();
+        }
+    }
+}

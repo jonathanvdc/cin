@@ -91,7 +91,7 @@ namespace cin
             {
                 Log.LogMessage(new LogEntry(Document.Identifier + " after preprocessing", result.ToString()));
             }
-            return new TokenizerStream(result.ToReader());
+            return new TokenizerStream(result.ToStream());
         }
 
         public static Task<CompilationUnit> ParseCompilationUnitAsync(IProjectSourceItem SourceItem, SyntaxAssembly Assembly, CompilationParameters Parameters)

@@ -31,12 +31,14 @@
   </ItemGroup>
   <ItemGroup Name="Lexer">
       <Compile Include="Lexer/Token.ds" />
-      <Compile Include="Lexer/TokenType.ds" />
+      <Compile Include="Lexer/TokenType.ds" />      
       <Compile Include="Lexer/TokenIdentifier.ds" />
       <Compile Include="Lexer/ITokenStream.ds" />
+      <Compile Include="Lexer/MemoryTokenStream.ds" />
       <Compile Include="Lexer/TokenizerStream.ds" />
       <Compile Include="Lexer/TokenExamples.ds" />
       <Compile Include="Lexer/TokenExtensions.ds" />
+      <Compile Include="Lexer/TokenStreamBuilder.ds" />
   </ItemGroup>
   <ItemGroup Name="Parser">
       <Compile Include="Parser/CSyntaxParser.ds" />
@@ -57,6 +59,7 @@
       <Compile Include="Preprocessor/PreprocessorInstance.ds" />
       <Compile Include="Preprocessor/PreprocessorEnvironment.ds" />
       <Compile Include="Preprocessor/PreprocessorState.ds" />
+      <Compile Include="Preprocessor/PreprocessorTokenizerStream.ds" />
       <Compile Include="Preprocessor/SourceChunk.ds" />
       <Compile Include="Preprocessor/SourceReaderExtensions.ds" />
   </ItemGroup>

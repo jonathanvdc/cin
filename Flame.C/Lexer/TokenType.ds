@@ -105,7 +105,10 @@ namespace Flame.C.Lexer
         CaseKeyword = 112,
         SwitchKeyword = 113,
         SizeOfKeyword = 114,
-        TypeOfKeyword = 115
+        TypeOfKeyword = 115,
+        Hash = 116,
+        HashHash = 117,
+        DefinedKeyword = 118
     }
 
     #endregion

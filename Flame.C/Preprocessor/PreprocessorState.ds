@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Flame.Compiler;
+using Flame.C.Lexer;
 
 namespace Flame.C.Preprocessor
 {
@@ -34,18 +35,23 @@ namespace Flame.C.Preprocessor
             }
         }
 
-        public PreprocessedSourceBuilder Expand(ISourceReader Reader)
+        public TokenStreamBuilder Expand(ITokenStream Reader)
         {
-            var preprocessor = new PreprocessorInstance(this);
-            preprocessor.Reader.Append(Reader);
+            var preprocessor = new PreprocessorInstance(Reader, this);
             preprocessor.Process();
             return preprocessor.Builder;
         }
-        public PreprocessedSourceBuilder Expand(SourceChunk Chunk)
+        public TokenStreamBuilder Expand(SourceChunk Chunk)
         {
-            return Expand(new ChunkReader(Chunk));
+            var chunkReader = new ChunkReader(Chunk);
+            return Expand(chunkReader);
         }
-        public PreprocessedSourceBuilder Expand(ISourceDocument Document)
+        public TokenStreamBuilder Expand(ISourceReader Reader)
+        {
+            var tokenizer = new PreprocessorTokenizerStream(Reader);
+            return Expand(tokenizer);
+        }
+        public TokenStreamBuilder Expand(ISourceDocument Document)
         {
             var text = Document.Source;
             var reader = new ChunkReader(new SourceChunk(text, new SourceLocation(Document, 0, text.Length)));
