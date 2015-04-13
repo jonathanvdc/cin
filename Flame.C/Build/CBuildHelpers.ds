@@ -74,6 +74,15 @@ namespace Flame.C.Build
 			Binder.MapType("float64_t", PrimitiveTypes.Float64);
 		}
 
+		public void MapBitTypeNames(PredefinedBinder Binder)
+		{
+			// These are compiler extensions, really
+			Binder.MapType("bit8_t",  PrimitiveTypes.Bit8);
+			Binder.MapType("bit16_t", PrimitiveTypes.Bit16);
+			Binder.MapType("bit32_t", PrimitiveTypes.Bit32);
+			Binder.MapType("bit64_t", PrimitiveTypes.Bit64);
+		}
+
 		public const IBinder CreatePrimitiveBinder(IBinder MainBinder,
             IType CharType, IType SizeType, IType PtrdiffType)
 		{
@@ -81,6 +90,7 @@ namespace Flame.C.Build
 
             MapCommonTypeNames(binder);
             MapStrictTypeNames(binder);
+			MapBitTypeNames(binder);
 			MapAliasTypeNames(binder);
             MapPlatformTypeNames(binder, CharType, SizeType, PtrdiffType);
 
@@ -90,13 +100,13 @@ namespace Flame.C.Build
         public const IBinder CreatePrimitiveBinder32(IBinder MainBinder)
         {
             return CreatePrimitiveBinder(MainBinder,
-                PrimitiveTypes.UInt8, PrimitiveTypes.UInt32, PrimitiveTypes.Int32);
+                PrimitiveTypes.Bit8, PrimitiveTypes.UInt32, PrimitiveTypes.Int32);
         }
 
         public const IBinder CreatePrimitiveBinder64(IBinder MainBinder)
         {
             return CreatePrimitiveBinder(MainBinder,
-                PrimitiveTypes.UInt8, PrimitiveTypes.UInt64, PrimitiveTypes.Int64);
+                PrimitiveTypes.Bit8, PrimitiveTypes.UInt64, PrimitiveTypes.Int64);
         }
 	}
 }

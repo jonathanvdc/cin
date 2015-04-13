@@ -11,7 +11,7 @@ int Test(void)
 {
     b.x = 5;
     b.y = 6;
-    unsigned char local = 5;
+    char local = 'a';
     b.z = (void*)&local;
     return b.x;
 }
