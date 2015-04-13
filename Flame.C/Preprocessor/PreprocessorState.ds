@@ -10,34 +10,56 @@ namespace Flame.C.Preprocessor
     {
         public const this(set PreprocessorEnvironment Environment, ISourceFile File)
         {
-            this.defs = new List<DefineDirective>();
+            this.defs = new Dictionary<string, DefineDirective>();
             this.Includes = new IncludeManager(File);
         }
         public const this(set PreprocessorEnvironment Environment, set IncludeManager Includes)
         {
-            this.defs = new List<DefineDirective>();
+            this.defs = new Dictionary<string, DefineDirective>();
         }
 
         public PreprocessorEnvironment Environment { const get; private set; }
         public IncludeManager Includes { const get; private set; }
 
-        private List<DefineDirective> defs;
-        public [DefineDirective] Definitions { const get return defs; }
+        private Dictionary<string, DefineDirective> defs;
+        public [DefineDirective] Definitions { const get return defs.Values; }
 
         public void Define(DefineDirective Directive)
         {
-            Undefine(Directive.Name);
-            defs.Add(Directive);
+            defs[Directive.Name] = Directive;
         }
         public void Undefine(string Name)
         {
-            for (int i = 0; i < defs.Count; i++)
+            if (defs.ContainsKey(Name))
             {
-                if (defs[i].Name.Equals(Name))
-                {
-                    defs.RemoveAt(i);
-                    i--;
-                }
+                defs.Remove(Name);
+            }
+        }
+
+        public const DefineDirective GetDefinition(string Name)
+        {
+            if (defs.ContainsKey(Name))
+            {
+                return defs[Name];
+            }
+            return null;
+        }
+
+        public const bool IsDefined(string Name)
+        {
+            return defs.ContainsKey(Name);
+        }
+
+        public TokenStreamBuilder ExpandDefinition(string Name)
+        {
+            var def = GetDefinition(Name);
+            if (def == null)
+            {
+                return new TokenStreamBuilder();
+            }
+            else
+            {
+                return Expand(new MemoryTokenStream(def.Body.Substitute(new Token[][] { }))); 
             }
         }
 

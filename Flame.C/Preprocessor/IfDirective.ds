@@ -1,0 +1,91 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+using Flame.Compiler.Expressions;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Variables;
+using Flame.C.Build;
+using Flame.C.Lexer;
+using Flame.C.Parser;
+using Flame.Syntax;
+using Flame.Syntax.C;
+
+namespace Flame.C.Preprocessor
+{
+    public class IfDirective : IDirective, ISourceSyntax
+    {
+        public const this(set Token HashToken, set Token IfToken, set IExpressionSyntax Expression);
+
+        public Token HashToken { const get; private set; }
+        public Token IfToken { const get; private set; }
+        public IExpressionSyntax Expression { const get; private set; }
+
+        public SourceLocation Location
+        {
+            const get
+            {
+                return HashToken.Location
+                                .Concat(IfToken.Location)
+                                .Concat(Expression.GetSourceLocation());
+            }
+        }
+
+        public static bool EvaluateExpression(IExpressionSyntax Expression, PreprocessorState State)
+        {
+            var state = new PreprocessorSyntaxState(State);
+            var expr = Expression.CreateVerifiedExpression(state);
+            if (expr == null)
+                return true;
+
+            var eval = new ConversionExpression(expr, PrimitiveTypes.Boolean).Evaluate();
+            if (eval == null)
+            {
+                State.Environment.Log.LogError(new LogEntry("Could not evaluate expression",
+                    "Macro expression '" + Expression.GetCode().Trim().ToString() + "' could not be evaluated at compile-time. " +
+                    "It is assumed to evaluate to true. Sorry :(",
+                    Expression.GetSourceLocation()));
+                return true;
+            }
+            else
+            {
+                return eval.GetValue<bool>();
+            }
+        }
+
+        public void Apply(PreprocessorInstance Processor)
+        {
+            bool result = EvaluateExpression(Expression, Processor.State);
+            Processor.PushIf(result);
+        }
+
+        public override const string ToString()
+        {
+            return GetCode().ToString();
+        }
+
+        public CodeBuilder GetCode()
+        {
+            var cb = new CodeBuilder();
+            cb.Append(HashToken.ToString());
+            cb.Append(IfToken.ToString());
+            cb.Append(Expression.GetCode());
+            return cb;
+        }
+    }
+
+    public static class IfDirectiveParser : IDirectiveParser
+    {
+        public const bool Matches(string Name)
+        {
+            return Name.ToLower().Equals("if");
+        }
+        public IDirective Parse(Token HashToken, Token Name, PreprocessorState State, ITokenStream Reader)
+        {
+            var expanded = State.Expand(Reader).ToStream();
+            var parser = new CSyntaxParser(State.Environment.Log);
+            var expr = parser.ParseExpression(expanded);
+            return new IfDirective(HashToken, Name, expr);
+        }
+    }
+}

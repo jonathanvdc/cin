@@ -49,9 +49,14 @@
       <Compile Include="Preprocessor/DefineBody.ds" />
       <Compile Include="Preprocessor/DefineDirective.ds" />
       <Compile Include="Preprocessor/DefineDirectiveParser.ds" />
+      <Compile Include="Preprocessor/ElseDirective.ds" />
+      <Compile Include="Preprocessor/ElseIfDirective.ds" />
+      <Compile Include="Preprocessor/EndIfDirective.ds" />
       <Compile Include="Preprocessor/ExpandedReader.ds" />
       <Compile Include="Preprocessor/IDirective.ds" />
       <Compile Include="Preprocessor/IDirectiveParser.ds" />
+      <Compile Include="Preprocessor/IfDefinedDirective.ds" />
+      <Compile Include="Preprocessor/IfDirective.ds" />
       <Compile Include="Preprocessor/IIncludeConfiguration.ds" />
       <Compile Include="Preprocessor/IncludeDirective.ds" />
       <Compile Include="Preprocessor/IncludeDirectiveParser.ds" />
@@ -67,6 +72,7 @@
       <Compile Include="Preprocessor/PreprocessorInstance.ds" />
       <Compile Include="Preprocessor/PreprocessorEnvironment.ds" />
       <Compile Include="Preprocessor/PreprocessorState.ds" />
+      <Compile Include="Preprocessor/PreprocessorSyntaxState.ds" />
       <Compile Include="Preprocessor/PreprocessorTokenizerStream.ds" />
       <Compile Include="Preprocessor/SourceChunk.ds" />
       <Compile Include="Preprocessor/SourceReaderExtensions.ds" />

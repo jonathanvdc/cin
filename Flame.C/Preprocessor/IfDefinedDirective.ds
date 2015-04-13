@@ -1,0 +1,81 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+using Flame.Compiler.Expressions;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Variables;
+using Flame.C.Build;
+using Flame.C.Lexer;
+using Flame.C.Parser;
+using Flame.Syntax;
+using Flame.Syntax.C;
+
+namespace Flame.C.Preprocessor
+{
+    public class IfDefinedDirective : IDirective, ISourceSyntax
+    {
+        public const this(set Token HashToken, set Token IfdefToken, set Token IdentifierToken);
+
+        public Token HashToken { const get; private set; }
+        public Token IfdefToken { const get; private set; }
+        public Token IdentifierToken { const get; private set; }
+
+        public bool IsNotDefinedDirective
+        {
+            const get return IfdefToken.TokenValue.ToLower().Equals("ifndef");
+        }
+
+        public SourceLocation Location
+        {
+            const get
+            {
+                return HashToken.Location
+                                .Concat(IfdefToken.Location)
+                                .Concat(IdentifierToken.Location);
+            }
+        }
+
+        private const bool GetResult(PreprocessorInstance Processor)
+        {
+            bool isDef = Processor.State.IsDefined(IdentifierToken.TokenValue);
+            if (IsNotDefinedDirective)
+            {
+                return !isDef;
+            }
+            else return isDef;
+        }
+
+        public void Apply(PreprocessorInstance Processor)
+        {
+            Processor.PushIf(GetResult(Processor));
+        }
+
+        public override const string ToString()
+        {
+            return GetCode().ToString();
+        }
+
+        public CodeBuilder GetCode()
+        {
+            var cb = new CodeBuilder();
+            cb.Append(HashToken.ToString());
+            cb.Append(IfdefToken.ToString());
+            cb.Append(IdentifierToken.ToString());
+            return cb;
+        }
+    }
+
+    public static class IfDefinedDirectiveParser : IDirectiveParser
+    {
+        public const bool Matches(string Name)
+        {
+            return Name.ToLower().Equals("ifdef") || Name.ToLower().Equals("ifndef");
+        }
+        public IDirective Parse(Token HashToken, Token Name, PreprocessorState State, ITokenStream Reader)
+        {
+            var ident = Reader.NextNoTrivia(TokenType.Identifier, State.Environment.Log);
+            return new IfDefinedDirective(HashToken, Name, ident);
+        }
+    }
+}

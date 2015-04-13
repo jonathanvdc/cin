@@ -1,0 +1,62 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+using Flame.Compiler.Expressions;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Variables;
+using Flame.C.Build;
+using Flame.C.Lexer;
+using Flame.C.Parser;
+using Flame.Syntax;
+using Flame.Syntax.C;
+
+namespace Flame.C.Preprocessor
+{
+    public class ElseDirective : IDirective, ISourceSyntax
+    {
+        public const this(set Token HashToken, set Token ElseToken);
+
+        public Token HashToken { const get; private set; }
+        public Token ElseToken { const get; private set; }
+
+        public SourceLocation Location
+        {
+            const get
+            {
+                return HashToken.Location
+                                .Concat(ElseToken.Location);
+            }
+        }
+
+        public void Apply(PreprocessorInstance Processor)
+        {
+            Processor.PushIf(!Processor.PopIf());
+        }
+
+        public override const string ToString()
+        {
+            return GetCode().ToString();
+        }
+
+        public CodeBuilder GetCode()
+        {
+            var cb = new CodeBuilder();
+            cb.Append(HashToken.ToString());
+            cb.Append(ElseToken.ToString());
+            return cb;
+        }
+    }
+
+    public static class ElseDirectiveParser : IDirectiveParser
+    {
+        public const bool Matches(string Name)
+        {
+            return Name.ToLower().Equals("else");
+        }
+        public IDirective Parse(Token HashToken, Token Name, PreprocessorState State, ITokenStream Reader)
+        {
+            return new ElseDirective(HashToken, Name);
+        }
+    }
+}

@@ -12,10 +12,14 @@ namespace Flame.C.Preprocessor
         {
             this.State = new PreprocessorState(Environment, File);
             this.Builder = new TokenStreamBuilder();
+            this.ifBlocks = new Stack<bool>();
+            PushIf(true);
         }
         public const this(set ITokenStream Reader, set PreprocessorState State)
         {
             this.Builder = new TokenStreamBuilder();
+            this.ifBlocks = new Stack<bool>();
+            PushIf(true);
         }
 
         public PreprocessorState State { const get; private set; }
@@ -23,6 +27,29 @@ namespace Flame.C.Preprocessor
         public TokenStreamBuilder Builder { const get; private set; }
 
         public PreprocessorEnvironment Environment { const get return State.Environment; }
+
+        private Stack<bool> ifBlocks;
+        public bool IgnoreInput
+        {
+            const get
+            {
+                foreach (var item in ifBlocks)
+                    if (!item)
+                {
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        public void PushIf(bool Value)
+        {
+            ifBlocks.Push(Value);
+        }
+        public bool PopIf()
+        {
+            return ifBlocks.Pop();
+        }
 
         private void ProcessMacro(DefineDirective Directive)
         {
@@ -69,9 +96,16 @@ namespace Flame.C.Preprocessor
             {
                 ProcessDirective(val);
             }
-            else
+            else if (!IgnoreInput)
             {
-                ProcessToken(val);
+                if (val.Type == TokenType.DefinedKeyword)
+                {
+                    ProcessDefined(val);
+                }
+                else
+                {
+                    ProcessToken(val);
+                }
             }
         }
 
@@ -102,6 +136,34 @@ namespace Flame.C.Preprocessor
                 {
                     directive.Apply(this);
                 }
+            }
+        }
+
+        private void ProcessDefined(Token DefinedToken)
+        {
+            string ident;
+            SourceLocation loc;
+            if (Reader.PeekNoTrivia().Type == TokenType.RParen)
+            {
+                var openingParen = Reader.NextNoTrivia();
+                var identToken = Reader.NextNoTrivia(TokenType.Identifier, State.Environment.Log);
+                var closingParen = Reader.NextNoTrivia(TokenType.LParen, State.Environment.Log);
+                ident = identToken.TokenValue;
+                loc = openingParen.Location.Concat(identToken.Location).Concat(closingParen.Location);
+            }
+            else
+            {
+                var identToken = Reader.NextNoTrivia(TokenType.Identifier, State.Environment.Log);
+                ident = identToken.TokenValue;
+                loc = identToken.Location;
+            }
+            if (State.IsDefined(ident))
+            {
+                Builder.Append(new Token(TokenType.TrueLiteral, "true", DefinedToken.Location.Concat(loc)));
+            }
+            else
+            {
+                Builder.Append(new Token(TokenType.FalseLiteral, "false", DefinedToken.Location.Concat(loc)));
             }
         }
 

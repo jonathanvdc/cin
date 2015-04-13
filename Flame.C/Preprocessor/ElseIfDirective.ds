@@ -1,0 +1,76 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+using Flame.Compiler.Expressions;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Variables;
+using Flame.C.Build;
+using Flame.C.Lexer;
+using Flame.C.Parser;
+using Flame.Syntax;
+using Flame.Syntax.C;
+
+namespace Flame.C.Preprocessor
+{
+    public class ElseIfDirective : IDirective, ISourceSyntax
+    {
+        public const this(set Token HashToken, set Token ElseIfToken, set IExpressionSyntax Expression);
+
+        public Token HashToken { const get; private set; }
+        public Token ElseIfToken { const get; private set; }
+        public IExpressionSyntax Expression { const get; private set; }
+
+        public SourceLocation Location
+        {
+            const get
+            {
+                return HashToken.Location
+                                .Concat(ElseIfToken.Location)
+                                .Concat(Expression.GetSourceLocation());
+            }
+        }
+
+        public void Apply(PreprocessorInstance Processor)
+        {
+            if (!Processor.PopIf())
+            {
+                bool result = IfDirective.EvaluateExpression(Expression, Processor.State);
+                Processor.PushIf(result);
+            }
+            else
+            {
+                Processor.PushIf(false);
+            }
+        }
+
+        public override const string ToString()
+        {
+            return GetCode().ToString();
+        }
+
+        public CodeBuilder GetCode()
+        {
+            var cb = new CodeBuilder();
+            cb.Append(HashToken.ToString());
+            cb.Append(ElseIfToken.ToString());
+            cb.Append(Expression.GetCode());
+            return cb;
+        }
+    }
+
+    public static class ElseIfDirectiveParser : IDirectiveParser
+    {
+        public const bool Matches(string Name)
+        {
+            return Name.ToLower().Equals("elif");
+        }
+        public IDirective Parse(Token HashToken, Token Name, PreprocessorState State, ITokenStream Reader)
+        {
+            var expanded = State.Expand(Reader).ToStream();
+            var parser = new CSyntaxParser(State.Environment.Log);
+            var expr = parser.ParseExpression(expanded);
+            return new ElseIfDirective(HashToken, Name, expr);
+        }
+    }
+}
