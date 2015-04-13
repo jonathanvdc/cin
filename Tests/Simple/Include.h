@@ -7,7 +7,7 @@ typedef struct
     int x;
 } A;
 
-#if BUFWIDTH >= 1024
+#if !defined(pointer) || BUFWIDTH >= 1024 // This is a comment!
 #else
 
 int Dereference(pointer(A) Value)

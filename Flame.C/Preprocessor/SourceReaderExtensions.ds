@@ -325,7 +325,7 @@ namespace Flame.C.Preprocessor
 
         public static const bool ContainsNewLine(this Token Value)
         {
-            return Value.Type == TokenType.Whitespace && Value.Contains('\n');
+            return Value.Type.IsTrivia() && Value.Contains('\n');
         }
 
         public static ITokenStream ReadLine(this ITokenStream Stream)
