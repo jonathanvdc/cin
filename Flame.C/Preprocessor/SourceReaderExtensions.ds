@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Flame.Compiler;
+using Flame.C.Build;
 using Flame.C.Lexer;
 
 namespace Flame.C.Preprocessor
@@ -206,8 +207,7 @@ namespace Flame.C.Preprocessor
 
         public static IReadOnlyDictionary<string, char> GetTrigraphs(this ICompilerLog Log)
         {
-            bool useTrigraphs = Log.Options.GetOption<bool>("trigraphs", true);
-            if (useTrigraphs)
+            if (Log.UseTrigraphs)
             {
                 return Trigraphs;
             }
@@ -219,8 +219,7 @@ namespace Flame.C.Preprocessor
             var tris = Log.GetTrigraphs();
             // Warn for trigraphs if trigraphs have not been requested explicitly, or if
             // warnings for trigraphs have been requested.
-            bool warnTrigraphs = (!Log.Options.HasOption("trigraphs") && !Log.Options.HasOption("Wtrigraphs")) ||
-                                    Log.Options.GetOption<bool>("Wtrigraphs", false);
+            bool warnTrigraphs = Log.ShowTrigraphWarnings;
 
             var builder = new PreprocessedSourceBuilder();
             while (!Reader.IsEmpty)

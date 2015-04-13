@@ -1,0 +1,56 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+
+namespace Flame.C.Build
+{
+    public static class Warnings
+    {
+        public const string[] AllWarnings
+        {
+            const get
+            {
+                return new string[]
+                {
+                    LanguageExtensionTokenWarnings,
+                    TrigraphWarnings
+                };
+            }
+        }
+
+        public const string Pedantic = "pedantic";
+        public const string Trigraphs = "trigraphs";
+        public const string LanguageExtensionTokenWarnings = "Wlanguage-extension-token";
+        public const string TrigraphWarnings = "Wtrigraphs";
+
+        public static bool IsPedantic[this ICompilerLog Log]
+        {
+            const get return Log.Options.GetOption<bool>(Pedantic, false);
+        }
+
+        public static bool UseTrigraphs[this ICompilerLog Log]
+        {
+            const get return Log.Options.GetOption<bool>(Trigraphs, true);
+        }
+
+        public static bool ShowTrigraphWarnings[this ICompilerLog Log]
+        {
+            const get return Log.Options.GetOption<bool>(TrigraphWarnings, true);
+        }
+        public static bool ShowLanguageExtensionTokenWarnings[this ICompilerLog Log]
+        {
+            const get
+            {
+                if (Log.Options.HasOption(LanguageExtensionTokenWarnings))
+                {
+                    return Log.Options.GetOption<bool>(LanguageExtensionTokenWarnings, false);
+                }
+                else
+                {
+                    return Log.IsPedantic;
+                }
+            }
+        }
+    }
+}

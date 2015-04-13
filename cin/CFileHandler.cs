@@ -88,7 +88,7 @@ namespace cin
             var sourceFile = new SourceFile(Document, Parameters);
             var preprocessor = new PreprocessorState(PreprocessorEnvironment.Static_Singleton.Instance.CreateDefaultEnvironment(Parameters.Log), sourceFile);
             var result = preprocessor.Expand(Document);
-            if (Parameters.Log.Options.GetOption<bool>("output-preprocessed", false))
+            if (Parameters.Log.Options.GetOption<bool>("output-preprocessed", false) || Parameters.Log.Options.GetOption<bool>("E", false))
             {
                 Parameters.Log.LogMessage(new LogEntry(Document.Identifier + " after preprocessing", result.ToString()));
             }

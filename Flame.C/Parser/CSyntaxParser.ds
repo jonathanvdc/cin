@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Flame.Compiler;
+using Flame.C.Build;
 using Flame.C.Lexer;
 using Flame.Syntax;
 using Flame.Syntax.C;
@@ -234,11 +235,19 @@ namespace Flame.C.Parser
             else return null;
         }
 
-        #region ParseSizeOfExpression
+        #region ParseTypeOfExpression
 
         protected virtual ITypeSyntax ParseTypeOfType(ITokenStream Tokens)
         {
             var typeOfKeyword = Tokens.NextNoTrivia(TokenType.TypeOfKeyword, Log);
+
+            if (Log.ShowLanguageExtensionTokenWarnings)
+            {
+                Log.LogWarning(new LogEntry("Extension used",
+                    "'" + typeOfKeyword.TokenValue + "' is a compiler extension. [-" + Warnings.LanguageExtensionTokenWarnings + "]",
+                    typeOfKeyword.Location));
+            }
+
             if (Tokens.PeekNoTrivia().Type == TokenType.RParen)
             {
                 var pos = Tokens.CurrentPosition;

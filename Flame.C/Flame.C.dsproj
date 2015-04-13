@@ -28,6 +28,7 @@
       <Compile Include="Build/SyntaxStruct.ds" />
       <Compile Include="Build/SyntaxTypedef.ds" />
       <Compile Include="Build/TypedefUnwrappingTransformer.ds" />
+      <Compile Include="Build/Warnings.ds" />
   </ItemGroup>
   <ItemGroup Name="Lexer">
       <Compile Include="Lexer/Token.ds" />
