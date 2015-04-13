@@ -1,0 +1,48 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+using Flame.Syntax;
+using Flame.C.Lexer;
+using Flame.Syntax.C;
+
+namespace Flame.C.Preprocessor
+{
+    public class PragmaOnceDirective : IDirective, ISourceSyntax
+    {
+        public const this(set Token HashToken, set Token PragmaToken, set Token OnceToken);
+
+        public Token HashToken { const get; private set; }
+        public Token PragmaToken { const get; private set; }
+        public Token OnceToken { const get; private set; }
+
+        public SourceLocation Location
+        {
+            const get
+            {
+                return HashToken.Location
+                                .Concat(PragmaToken.Location)
+                                .Concat(OnceToken.Location);
+            }
+        }
+
+        public void Apply(PreprocessorInstance Processor)
+        {
+            Processor.State.Includes.MarkIncludeOnce();
+        }
+
+        public override const string ToString()
+        {
+            return GetCode().ToString();
+        }
+
+        public CodeBuilder GetCode()
+        {
+            var cb = new CodeBuilder();
+            cb.Append(HashToken.ToString());
+            cb.Append(PragmaToken.ToString());
+            cb.Append(OnceToken.ToString());
+            return cb;
+        }
+    }
+}

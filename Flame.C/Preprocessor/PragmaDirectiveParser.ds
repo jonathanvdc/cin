@@ -1,0 +1,35 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Flame.Compiler;
+using Flame.Syntax;
+using Flame.C.Lexer;
+using Flame.Syntax.C;
+
+namespace Flame.C.Preprocessor
+{
+    public static class PragmaDirectiveParser : IDirectiveParser
+    {
+        public const bool Matches(string Name)
+        {
+            string lower = Name.ToLower();
+            return lower.Equals("pragma");
+        }
+        public IDirective Parse(Token HashToken, Token Name, PreprocessorState State, ITokenStream Reader)
+        {
+            var pragmaName = Reader.NextNoTrivia(TokenType.Identifier, State.Environment.Log);
+            string lowerName = pragmaName.TokenValue.ToLower();
+            if (lowerName.Equals("once"))
+            {
+                return new PragmaOnceDirective(HashToken, Name, pragmaName);
+            }
+            else
+            {
+                State.Environment.Log.LogWarning(new LogEntry("Unknown pragma directive",
+                    "Pragma directive '#" + Name.TokenValue + " " + pragmaName.TokenValue + "' was not recognized.",
+                    HashToken.Location.Concat(Name.Location).Concat(pragmaName.Location)));
+                return null;
+            }
+        }
+    }
+}

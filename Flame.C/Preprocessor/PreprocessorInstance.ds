@@ -86,13 +86,22 @@ namespace Flame.C.Preprocessor
             if (parser == null)
             {
                 Environment.Log.LogWarning(new LogEntry("Unknown preprocessor directive",
-                    "Preprocessor directive '" + name.TokenValue + "' was not recognized.",
-                    name.Location));
+                    "Preprocessor directive '#" + name.TokenValue + "' was not recognized.",
+                    HashToken.Location.Concat(name.Location)));
             }
             else
             {
                 var directive = parser.Parse(HashToken, name, State, body);
-                directive.Apply(this);
+                if (directive == null)
+                {
+                    Environment.Log.LogWarning(new LogEntry("Could not apply directive",
+                        "Preprocessor directive '#" + name.TokenValue + "' could not be applied.",
+                        HashToken.Location.Concat(name.Location)));
+                }
+                else
+                {
+                    directive.Apply(this);
+                }
             }
         }
 

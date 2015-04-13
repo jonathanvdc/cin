@@ -1,6 +1,6 @@
 
-#import "Include.h"
-#import "Include.h"
+#include "Include.h"
+#include "Include.h"
 
 int Test()
 {

@@ -38,6 +38,7 @@ namespace Flame.C.Preprocessor
             var parsers = new List<IDirectiveParser>();
             parsers.Add(DefineDirectiveParser);
             parsers.Add(IncludeDirectiveParser);
+            parsers.Add(PragmaDirectiveParser);
             return new PreprocessorEnvironment(Log, parsers);
         }
     }

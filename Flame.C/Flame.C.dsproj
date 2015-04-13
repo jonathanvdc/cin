@@ -58,6 +58,8 @@
       <Compile Include="Preprocessor/ISourceFile.ds" />
       <Compile Include="Preprocessor/ISourceReader.ds" />
       <Compile Include="Preprocessor/MultiReader.ds" />
+      <Compile Include="Preprocessor/PragmaDirectiveParser.ds" />
+      <Compile Include="Preprocessor/PragmaOnceDirective.ds" />
       <Compile Include="Preprocessor/PreprocessedDocument.ds" />
       <Compile Include="Preprocessor/PreprocessedSource.ds" />
       <Compile Include="Preprocessor/PreprocessedSourceBuilder.ds" />
