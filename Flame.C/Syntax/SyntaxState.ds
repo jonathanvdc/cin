@@ -19,7 +19,7 @@ namespace Flame.Syntax.C
         {
             this.Binder = new SyntaxStateBinder(this);
             this.MemberProvider = new MemberProvider(Binder);
-            this.declaredVariables = new Stack<Dictionary<string, IVariable>>();
+            this.declaredVariables = new Stack<Dictionary<string, DeclaredVariable>>();
             this.declarationTypes = new Stack<bool>();
             PushVariableScope();
         }
@@ -29,7 +29,7 @@ namespace Flame.Syntax.C
             set IConverter<IType, string> TypeNamer)
         {
             this.Binder = new SyntaxStateBinder(this);
-            this.declaredVariables = new Stack<Dictionary<string, IVariable>>();
+            this.declaredVariables = new Stack<Dictionary<string, DeclaredVariable>>();
             this.declarationTypes = new Stack<bool>();
             PushVariableScope();
         }
@@ -57,12 +57,12 @@ namespace Flame.Syntax.C
         public IMemberProvider MemberProvider { const get; private set; }
         public DeclarationScope Scope { const get; private set; }
 
-        private Stack<Dictionary<string, IVariable>> declaredVariables;
-        public Dictionary<string, IVariable> Locals
+        private Stack<Dictionary<string, DeclaredVariable>> declaredVariables;
+        public Dictionary<string, DeclaredVariable> Locals
         {
             const get
             {
-            	Dictionary<string, IVariable> dict = new Dictionary<string, IVariable>();
+            	Dictionary<string, DeclaredVariable> dict = new Dictionary<string, DeclaredVariable>();
             	foreach (var map in declaredVariables)
             	foreach (var item in map)
             	{
@@ -100,17 +100,28 @@ namespace Flame.Syntax.C
                 return Method.DeclaringType;
             }
         }
-        public IVariable DeclareVariable(string Name, IVariable Variable)
+        public IVariable DeclareVariable(string Name, IVariable Variable, SourceLocation Location)
         {
             var localDecls = declaredVariables.Peek();
             if (localDecls.ContainsKey(Name))
             {
-                Log.LogError(new LogEntry("Variable redefinition", "Variable '" + Name + "' is declared more than once in '" + Method.Name + "'."));
+                var body = RedefinitionHelpers.CreateRedefinitionNode(Name, Location, localDecls[Name].Location);
+                Log.LogError(new LogEntry("Variable redefinition", body));
             }
-            localDecls[Name] = Variable;
+            else if (Log.ShowShadowWarnings && VariableExists(Name))
+            {
+                var node = RedefinitionHelpers.CreateRedefinitionMessageNode("Variable '" + Name + "' is shadowed. [-" + Warnings.ShadowWarnings + "]",
+                    Location, GetDeclarationLocation(Name));
+                Log.LogWarning(new LogEntry("Variable shadowed", node));
+            }
+            localDecls[Name] = new DeclaredVariable(Variable, Location);
             return Variable;
         }
         public const IVariable GetVariable(string Name)
+        {
+            return GetDeclaredVariable(Name).Variable;
+        }
+        public const DeclaredVariable GetDeclaredVariable(string Name)
         {
             var localDict = Locals;
             if (localDict.ContainsKey(Name))
@@ -119,9 +130,9 @@ namespace Flame.Syntax.C
             }
             else if (ParameterProvider != null && ParameterProvider.VariableExists(Name))
             {
-                return ParameterProvider.GetVariable(Name);
+                return new DeclaredVariable(ParameterProvider.GetVariable(Name), null);
             }
-            return null;
+            return default(DeclaredVariable);
         }
         public const bool VariableExists(string Name)
         {
@@ -138,7 +149,7 @@ namespace Flame.Syntax.C
 
         private void PushVariableScope()
         {
-            this.declaredVariables.Push(new Dictionary<string, IVariable>());
+            this.declaredVariables.Push(new Dictionary<string, DeclaredVariable>());
             PushDeclarationType(false);
         }
 
@@ -155,7 +166,7 @@ namespace Flame.Syntax.C
             var scopeVars = declaredVariables.Pop();
             foreach (var item in scopeVars)
             {
-                statements.Add(item.Value.CreateReleaseStatement());
+                statements.Add(item.Value.Variable.CreateReleaseStatement());
             }
             this.Scope = this.Scope.Parent;
             return new BlockStatement(statements.ToArray());

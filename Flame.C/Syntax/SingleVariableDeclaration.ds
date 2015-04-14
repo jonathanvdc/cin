@@ -63,15 +63,6 @@ namespace Flame.Syntax.C
 
         public const IVariable CreateVariable(IType ElementType, ISyntaxState State)
         {
-            string name = Declarator.Name;
-
-            if (State.Log.ShowShadowWarnings && State.VariableExists(name))
-            {
-                State.Log.LogWarning(new LogEntry("Variable shadowed",
-                    "Variable '" + name + "' is shadowed. [-" + Warnings.ShadowWarnings + "]",
-                    Location));
-            }
-
             if (Value == null)
             {
                 if (ElementType == null)
@@ -89,7 +80,7 @@ namespace Flame.Syntax.C
                         Location));
                 }
 
-                return State.DeclareVariable(Declarator.Name, Declarator.CreateType(ElementType, (ICSyntaxState)State));
+                return State.DeclareVariable(Declarator.Name, Declarator.CreateType(ElementType, (ICSyntaxState)State), Location);
             }
             else
             {
@@ -117,7 +108,7 @@ namespace Flame.Syntax.C
                     }
                 }
 
-                var variable = State.DeclareVariable(Declarator.Name, Declarator.CreateType(type, (ICSyntaxState)State));
+                var variable = State.DeclareVariable(Declarator.Name, Declarator.CreateType(type, (ICSyntaxState)State), Location);
                 return new AssignedVariable(variable, val);
             }
         }

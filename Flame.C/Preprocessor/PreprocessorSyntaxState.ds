@@ -72,14 +72,18 @@ namespace Flame.C.Preprocessor
                 return Method.DeclaringType;
             }
         }
-        public IVariable DeclareVariable(string Name, IVariable Variable)
+        public IVariable DeclareVariable(string Name, IVariable Variable, SourceLocation Location)
         {
-            Log.LogError(new LogEntry("Invalid preprocessor usage", "The preprocessor cannot declare variables."));
+            Log.LogError(new LogEntry("Invalid preprocessor usage", "The preprocessor cannot declare variables.", Location));
             return null;
         }
         public const IVariable GetVariable(string Name)
         {
             return new ExpressionVariable(new Int32Expression(0));
+        }
+        public const DeclaredVariable GetDeclaredVariable(string Name)
+        {
+            return new DeclaredVariable(GetVariable(Name), null);
         }
         public const bool VariableExists(string Name)
         {

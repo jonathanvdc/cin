@@ -59,29 +59,7 @@ namespace Flame.Syntax.C
         public static const IMarkupNode CreateRedefinitionNode(string Name,
             SourceLocation NewDefinition, SourceLocation OldDefinition)
         {
-            var firstMessage = new MarkupNode(NodeConstants.TextNodeType, "'" + Name + "' is defined more than once.");
-            var firstDiag = NewDefinition.CreateDiagnosticsNode();
-
-            var oldSrc = OldDefinition.CreateSourceNode();
-            var neutralOldSrc = new MarkupNode("neutral-diagnostics", new IMarkupNode[] { oldSrc });
-            var oldTitle = new MarkupNode(NodeConstants.TextNodeType, "Previous definition: ");
-            var oldMessage = OldDefinition.CreateLineNumberNode(NodeConstants.TextNodeType);
-
-            var oldRemark = new MarkupNode(NodeConstants.RemarksNodeType, new IMarkupNode[]
-            {
-                oldTitle,
-                oldMessage,
-                neutralOldSrc
-            });
-
-            var totalMessage = new MarkupNode("entry", new IMarkupNode[]
-            {
-                firstMessage,
-                firstDiag,
-                oldRemark
-            });
-
-            return totalMessage;
+            return RedefinitionHelpers.CreateRedefinitionNode(Name, NewDefinition, OldDefinition);
         }
 
         public IMethod Declare(SyntaxFunction Method)
@@ -249,7 +227,7 @@ namespace Flame.Syntax.C
         public [ICType] AllEnumTypes
         {
             const get
-                return Enumerable.Concat<ICType>(allEnums.Values, anonymousEnums); 
+                return Enumerable.Concat<ICType>(allEnums.Values, anonymousEnums);
         }
         public [ICType] AllTypes
         {
