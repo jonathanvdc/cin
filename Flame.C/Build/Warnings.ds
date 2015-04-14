@@ -7,23 +7,12 @@ namespace Flame.C.Build
 {
     public static class Warnings
     {
-        public const string[] AllWarnings
-        {
-            const get
-            {
-                return new string[]
-                {
-                    LanguageExtensionTokenWarnings,
-                    TrigraphWarnings
-                };
-            }
-        }
-
         public const string Pedantic = "pedantic";
         public const string Trigraphs = "trigraphs";
         public const string LanguageExtensionTokenWarnings = "Wlanguage-extension-token";
         public const string TrigraphWarnings = "Wtrigraphs";
         public const string ExtraSemicolonWarnings = "Wextra-semi";
+        public const string ShadowWarnings = "Wshadow";
 
         public static bool IsPedantic[this ICompilerLog Log]
         {
@@ -58,6 +47,10 @@ namespace Flame.C.Build
         public static bool ShowExtraSemicolonWarnings[this ICompilerLog Log]
         {
             const get return Log.UsePedanticWarnings(ExtraSemicolonWarnings);
+        }
+        public static bool ShowShadowWarnings[this ICompilerLog Log]
+        {
+            const get return Log.UsePedanticWarnings(ShadowWarnings);
         }
     }
 }
