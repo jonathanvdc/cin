@@ -1231,7 +1231,18 @@ namespace Flame.C.Parser
         protected virtual FunctionDefinitionSyntax ParseFunctionDefinition(DeclarationSyntax Declaration, ITokenStream Tokens)
         {
             var body = ParseStatement(Tokens);
-            return new FunctionDefinitionSyntax(Declaration, body);
+            if (Tokens.PeekNoTrivia().Type == TokenType.Semicolon)
+            {
+                var extraSemi = Tokens.NextNoTrivia(TokenType.Semicolon, Log);
+                if (Log.ShowExtraSemicolonWarnings)
+                {
+                    Log.LogWarning(new LogEntry("Extra semicolon",
+                        "Extra semicolon outside of function '" + Declaration.Name + "'. [-" + Warnings.ExtraSemicolonWarnings + "]",
+                        extraSemi.Location));
+                }
+                return new FunctionDefinitionSyntax(Declaration, body, extraSemi);
+            }
+            else return new FunctionDefinitionSyntax(Declaration, body);
         }
 
         public virtual FunctionDefinitionSyntax ParseFunctionDefinition(ITokenStream Tokens)

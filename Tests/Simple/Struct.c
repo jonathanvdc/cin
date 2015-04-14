@@ -14,4 +14,4 @@ int Test(void)
     char local = 'a';
     b.z = (void*)&local;
     return b.x;
-}
+};

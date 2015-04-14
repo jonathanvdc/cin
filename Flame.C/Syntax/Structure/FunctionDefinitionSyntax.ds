@@ -10,10 +10,16 @@ namespace Flame.Syntax.C
 {
     public class FunctionDefinitionSyntax : IDeclarationSyntax, ISourceSyntax
     {
-        public const this(set DeclarationSyntax Declaration, set IStatementSyntax Body);
+        public const this(set DeclarationSyntax Declaration, set IStatementSyntax Body)
+        {
+            this.ExtraSemicolon = Token.Undefined;
+        }
+        public const this(set DeclarationSyntax Declaration, set IStatementSyntax Body,
+                          set Token ExtraSemicolon);
 
         public DeclarationSyntax Declaration { const get; private set; }
         public IStatementSyntax Body { const get; private set; }
+        public Token ExtraSemicolon { const get; private set; }
 
         public FunctionDeclaratorSyntax Declarator
         {
@@ -24,7 +30,7 @@ namespace Flame.Syntax.C
         {
             const get
             {
-                return Declaration.Location.Concat(Body.GetSourceLocation());
+                return Declaration.Location.Concat(Body.GetSourceLocation()).Concat(ExtraSemicolon.Location);
             }
         }
 
@@ -40,6 +46,7 @@ namespace Flame.Syntax.C
         {
             var cb = Declaration.GetCode();
             cb.Append(Body.GetCode());
+            cb.Append(ExtraSemicolon.ToString());
             return cb;
         }
     }
