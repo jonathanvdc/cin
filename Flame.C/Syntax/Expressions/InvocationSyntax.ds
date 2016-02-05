@@ -43,9 +43,9 @@ namespace Flame.Syntax.C
         	SignatureBuilder.Append(')');
         }
 
-        public static const IMarkupNode CreateSignatureDiff(IMethod Method, IType[] ArgumentTypes, IConverter<IType, string> TypeNamer)
+        public static const MarkupNode CreateSignatureDiff(IMethod Method, IType[] ArgumentTypes, IConverter<IType, string> TypeNamer)
         {
-            var nodes = new List<IMarkupNode>();
+            var nodes = new List<MarkupNode>();
             var retType = Method.ReturnType;
             if (retType == null)
             {
@@ -92,7 +92,7 @@ namespace Flame.Syntax.C
             	var failedMatches = Enumerable.ToArray<IMethod>(Enumerable.OfType<IMethod>(matches));
             	if (failedMatches.Length > 0)
             	{
-            		var failedMatchesList = new List<IMarkupNode>();
+            		var failedMatchesList = new List<MarkupNode>();
             		foreach (var item in failedMatches)
             		{
                         failedMatchesList.Add(CreateSignatureDiff(item, argTypes, namer));

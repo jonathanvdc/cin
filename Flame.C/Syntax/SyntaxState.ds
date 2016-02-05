@@ -13,71 +13,51 @@ namespace Flame.Syntax.C
 {
     public class SyntaxState : ICSyntaxState
     {
-        public const this(set CompilationUnit DeclaringUnit, set IMethod Method,
+        public const this(
+            set CompilationUnit DeclaringUnit, set IMethod Method,
             set DeclarationScope Scope, set ICompilerLog Log,
             set IConverter<IType, string> TypeNamer)
         {
-            this.Binder = new SyntaxStateBinder(this);
+            this.Binder = new ScopedBinder(new SyntaxStateBinder(this), this);
             this.MemberProvider = new MemberProvider(Binder);
-            this.declaredVariables = new Stack<Dictionary<string, DeclaredVariable>>();
             this.declarationTypes = new Stack<bool>();
+            this.tags = new TagStack();
+            this.Locals = new LocalScopeStack();
             PushVariableScope();
         }
-        public const this(set CompilationUnit DeclaringUnit, set IMethod Method,
+        public const this(
+            set CompilationUnit DeclaringUnit, set IMethod Method,
             set DeclarationScope Scope, set ICompilerLog Log,
             set IMemberProvider MemberProvider,
             set IConverter<IType, string> TypeNamer)
         {
-            this.Binder = new SyntaxStateBinder(this);
-            this.declaredVariables = new Stack<Dictionary<string, DeclaredVariable>>();
+            this.Binder = new ScopedBinder(new SyntaxStateBinder(this), this);
             this.declarationTypes = new Stack<bool>();
+            this.tags = new TagStack();
+            this.Locals = new LocalScopeStack();
             PushVariableScope();
         }
 
         public IType CurrentType
         {
-            const get
-            {
-                var declType = Method.DeclaringType;
-                if (declType.IsGeneric && declType.IsGenericDeclaration)
-                {
-                	return declType.MakeGenericType((IEnumerable<IType>)declType.GetGenericParameters());
-                }
-                else
-                {
-                	return declType;
-                }
-            }
+            get { return Method.DeclaringType.MakeGenericType(Method.DeclaringType.GenericParameters); }
         }
 
         public CompilationUnit DeclaringUnit { const get; private set; }
         public ICompilerLog Log { const get; private set; }
-        public IBinder Binder { const get; private set; }
+        public IScopedBinder Binder { const get; private set; }
         public IConverter<IType, string> TypeNamer { const get; private set; }
         public IMemberProvider MemberProvider { const get; private set; }
         public DeclarationScope Scope { const get; private set; }
-
-        private Stack<Dictionary<string, DeclaredVariable>> declaredVariables;
-        public Dictionary<string, DeclaredVariable> Locals
-        {
-            const get
-            {
-            	Dictionary<string, DeclaredVariable> dict = new Dictionary<string, DeclaredVariable>();
-            	foreach (var map in declaredVariables)
-            	foreach (var item in map)
-            	{
-            		dict[item.Key] = item.Value;
-            	}
-                return dict;
-            }
-        }
-
         public IMethod Method { const get; private set; }
+        public LocalScopeStack Locals { const get; private set; }
 
+        private TagStack tags;
 		private IVariableProvider paramProvider;
+
         public IVariableProvider ParameterProvider
         {
-            const get
+            get
             {
             	if (paramProvider == null)
             	{
@@ -86,44 +66,49 @@ namespace Flame.Syntax.C
                 return paramProvider;
             }
         }
+
         public IType ReturnType
         {
-            const get
-            {
-                return Method.ReturnType;
-            }
+            get { return Method.ReturnType; }
         }
+
         public IType DeclaringType
         {
-            const get
-            {
-                return Method.DeclaringType;
-            }
+            get { return Method.DeclaringType; }
         }
+
+        public UniqueTag Tag
+        {
+            get { return tags.Top; }
+        }
+
         public IVariable DeclareVariable(string Name, IVariable Variable, SourceLocation Location)
         {
-            var localDecls = declaredVariables.Peek();
+            var localDecls = Locals.DeclaredLocals;
             if (localDecls.ContainsKey(Name))
             {
                 var body = RedefinitionHelpers.CreateRedefinitionNode(Name, Location, localDecls[Name].Location);
-                Log.LogError(new LogEntry("Variable redefinition", body));
+                Log.LogError(new LogEntry("variable redefinition", body));
             }
-            else if (Log.ShowShadowWarnings && VariableExists(Name))
+            else if (Warnings.Shadow.UseWarning(Log.Options) && VariableExists(Name))
             {
-                var node = RedefinitionHelpers.CreateRedefinitionMessageNode("Variable '" + Name + "' is shadowed. [-" + Warnings.ShadowWarnings + "]",
-                    Location, GetDeclarationLocation(Name));
-                Log.LogWarning(new LogEntry("Variable shadowed", node));
+                var node = RedefinitionHelpers.CreateRedefinitionMessageNode(
+                    Warnings.Shadow.CreateMessage(
+                        "variable '" + Name + "' is shadowed. "),
+                    Location, this.GetDeclarationLocation(Name));
+                Log.LogWarning(new LogEntry("variable shadowed", node));
             }
-            localDecls[Name] = new DeclaredVariable(Variable, Location);
+            Locals.Declare(Name, Variable, Location);
             return Variable;
         }
-        public const IVariable GetVariable(string Name)
+
+        public IVariable GetVariable(string Name)
         {
             return GetDeclaredVariable(Name).Variable;
         }
-        public const DeclaredVariable GetDeclaredVariable(string Name)
+        public DeclaredVariable GetDeclaredVariable(string Name)
         {
-            var localDict = Locals;
+            var localDict = Locals.VisibleLocals;
             if (localDict.ContainsKey(Name))
             {
                 return localDict[Name];
@@ -132,12 +117,14 @@ namespace Flame.Syntax.C
             {
                 return new DeclaredVariable(ParameterProvider.GetVariable(Name), null);
             }
-            return default(DeclaredVariable);
+            else
+            {
+                return default(DeclaredVariable);
+            }
         }
-        public const bool VariableExists(string Name)
+        public bool VariableExists(string Name)
         {
-            var localDict = Locals;
-            if (localDict.ContainsKey(Name))
+            if (Locals.VisibleLocals.ContainsKey(Name))
             {
                 return true;
             }
@@ -147,29 +134,33 @@ namespace Flame.Syntax.C
             }
         }
 
+        public void PushScope()
+        {
+            PushScope(null);
+        }
+
         private void PushVariableScope()
         {
-            this.declaredVariables.Push(new Dictionary<string, DeclaredVariable>());
+            Binder = Binder.PushScope();
+            Locals.Push();
             PushDeclarationType(false);
         }
 
-        public void PushScope()
+        public void PushScope(UniqueTag Tag)
         {
             PushVariableScope();
-            this.Scope = new DeclarationScope(this.DeclaringUnit, this.Scope);
+            Scope = new DeclarationScope(this.DeclaringUnit, this.Scope);
+            tags.Push(Tag);
         }
 
         public IStatement PopScope()
         {
             PopDeclarationType();
-            List<IStatement> statements = new List<IStatement>();
-            var scopeVars = declaredVariables.Pop();
-            foreach (var item in scopeVars)
-            {
-                statements.Add(item.Value.Variable.CreateReleaseStatement());
-            }
-            this.Scope = this.Scope.Parent;
-            return new BlockStatement(statements.ToArray());
+            tags.Pop();
+            Binder = Binder.PopScope();
+            Scope = this.Scope.Parent;
+
+            return Locals.Pop();
         }
 
         private Stack<bool> declarationTypes;

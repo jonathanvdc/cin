@@ -26,15 +26,15 @@ namespace Flame.Syntax.C
             var type = Value.Type;
             var length = GetLengthExpression(Value);
 
-            var elemType = type.AsContainerType().GetElementType();
+            var elemType = type.AsContainerType().ElementType;
             if (HasPrimitiveSize(elemType))
             {
                 return new MultiplyExpression(length, new SizeOfExpression(elemType));
             }
             else
             {
-                var resultVar = new LateBoundVariable(PrimitiveTypes.Int32);
-                var lengthVar = new LateBoundVariable(PrimitiveTypes.Int32);
+                var resultVar = new LocalVariable(PrimitiveTypes.Int32);
+                var lengthVar = new LocalVariable(PrimitiveTypes.Int32);
                 var lengthSetStatement = lengthVar.CreateSetStatement(length);
                 var lengthGetExpr = lengthVar.CreateGetExpression();
                 var zeroExpr = new Int32Expression(0);
@@ -71,7 +71,7 @@ namespace Flame.Syntax.C
 
         private static const IExpression GetArrayLengthExpression(IExpression Value)
         {
-            var lengthProp = Value.Type.GetProperties().GetProperty("Length", false);
+            var lengthProp = Value.Type.Properties.GetProperty("Length", false);
             var lengthGetter = lengthProp.GetGetAccessor();
             return new InvocationExpression(lengthGetter, Value, new IExpression[] { });
         }
@@ -79,7 +79,7 @@ namespace Flame.Syntax.C
         private static const IExpression GetVectorLengthExpression(IExpression Value)
         {
             IExpression result = new Int32Expression(1);
-            foreach (var item in Value.Type.AsContainerType().AsVectorType().GetDimensions())
+            foreach (var item in Value.Type.AsContainerType().AsVectorType().Dimensions)
             {
                 result = new MultiplyExpression(result, new Int32Expression(item));
             }

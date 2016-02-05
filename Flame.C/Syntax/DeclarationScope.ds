@@ -56,8 +56,9 @@ namespace Flame.Syntax.C
         private Dictionary<string, SyntaxTypedef> allTypedefs;
         private List<SyntaxEnum> anonymousEnums;
 
-        public static const IMarkupNode CreateRedefinitionNode(string Name,
-            SourceLocation NewDefinition, SourceLocation OldDefinition)
+        public static const MarkupNode CreateRedefinitionNode(
+            string Name, SourceLocation NewDefinition,
+            SourceLocation OldDefinition)
         {
             return RedefinitionHelpers.CreateRedefinitionNode(Name, NewDefinition, OldDefinition);
         }
@@ -94,7 +95,8 @@ namespace Flame.Syntax.C
             return fields[name];
         }
 
-        private void Define<T>(IDefinableType<T> Declaration, IDefinableType<T> Definition)
+        private void Define<T>(
+            IDefinableType<T> Declaration, IDefinableType<T> Definition)
             where T : ISyntaxNode
         {
             if (Definition.IsDefinition)
@@ -111,7 +113,8 @@ namespace Flame.Syntax.C
             }
         }
 
-        private T DeclareGeneric<T, TSyntax>(T Type, Dictionary<string, T> Locals, Dictionary<string, T> Globals)
+        private T DeclareGeneric<T, TSyntax>(
+            T Type, Dictionary<string, T> Locals, Dictionary<string, T> Globals)
             where TSyntax : ISyntaxNode
             where T : IRenamableType
         {
@@ -131,7 +134,8 @@ namespace Flame.Syntax.C
             return this.DeclareNew<T, TSyntax>(Type, Locals, Globals);
         }
 
-        private T DeclareNew<T, TSyntax>(T Type, Dictionary<string, T> Locals, Dictionary<string, T> Globals)
+        private T DeclareNew<T, TSyntax>(
+            T Type, Dictionary<string, T> Locals, Dictionary<string, T> Globals)
             where TSyntax : ISyntaxNode
             where T : IRenamableType
         {
@@ -199,7 +203,8 @@ namespace Flame.Syntax.C
                 }
                 else
                 {
-                    Unit.Assembly.Log.LogError(new LogEntry("Typedef redefinition with different types",
+                    Unit.Assembly.Log.LogError(new LogEntry(
+                        "typedef redefinition with different types",
                         CreateRedefinitionNode(Typedef.LocalName,
                             Typedef.DeclaratorSyntax.GetSourceLocation(),
                             old.DeclaratorSyntax.GetSourceLocation())));
@@ -214,7 +219,7 @@ namespace Flame.Syntax.C
         public [IMethod] LocalFunctions { const get return methods.Values; }
         public [ICType] LocalTypes
         {
-            const get
+            get
                 return Enumerable.Concat<ICType>(
                         Enumerable.Concat<ICType>(
                             structs.Values,
@@ -226,17 +231,17 @@ namespace Flame.Syntax.C
         public [IMethod] AllFunctions { const get return allMethods.Values; }
         public [ICType] AllEnumTypes
         {
-            const get
+            get
                 return Enumerable.Concat<ICType>(allEnums.Values, anonymousEnums);
         }
         public [ICType] AllTypes
         {
-            const get
-            return Enumerable.Concat<ICType>(
-                    Enumerable.Concat<ICType>(
-                        allStructs.Values,
-                        allEnums.Values),
-                        allTypedefs.Values);
+            get
+                return Enumerable.Concat<ICType>(
+                        Enumerable.Concat<ICType>(
+                            allStructs.Values,
+                            allEnums.Values),
+                            allTypedefs.Values);
         }
     }
 }

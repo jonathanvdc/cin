@@ -1,0 +1,34 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Flame.Build;
+using Flame.Compiler;
+using Flame.Compiler.Build;
+
+namespace Flame.C.Build
+{
+    /// <summary>
+    /// A set of ancestry rules for typedef types.
+    /// </summary>
+    public static class TypedefAncestryRules : IAncestryRules
+    {
+        private IType UnwrapTypedef(IType Type)
+        {
+            if (Type is SyntaxTypedef)
+                return UnwrapTypedef(((SyntaxTypedef)Type).Type);
+            else
+                return Type;
+        }
+
+        public int GetAncestryDegree(IType First, IType Second)
+        {
+            if (First is SyntaxTypedef || Second is SyntaxTypedef)
+                // "Unwrap" the left and/or right typedef types, and
+                // try to determine their ancestry.
+                return UnwrapTypedef(First).GetAncestryDegree(UnwrapTypedef(Second));
+            else
+                // The previous attempts proved unsuccessful.
+                return -1;
+        }
+    }
+}

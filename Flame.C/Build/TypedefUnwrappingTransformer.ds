@@ -7,13 +7,12 @@ namespace Flame.C.Build
     {
         public const this();
 
-        protected override const IType ConvertTypeDefault(IType Type)
+        protected override IType ConvertTypeDefault(IType Type)
         {
             if (Type is SyntaxTypedef)
-            {
                 return Convert(((SyntaxTypedef)Type).Type);
-            }
-            else return Type;
+            else
+                return Type;
         }
     }
 }

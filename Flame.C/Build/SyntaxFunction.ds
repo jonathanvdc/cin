@@ -62,33 +62,36 @@ namespace Flame.C.Build
             const get return true;
         }
 
-        public const [IAttribute] GetAttributes()
+        public [IAttribute] Attributes
         {
-            return new IAttribute[] { new AccessAttribute(AccessModifier.Public) };
+            get { return new IAttribute[] { new AccessAttribute(AccessModifier.Public) }; }
         }
 
         private IParameter[] parameters;
-        public const IParameter[] GetParameters()
+        public [IParameter] Parameters
         {
-            if (parameters == null)
+            get
             {
-                var results = new List<IParameter>();
-                foreach (var item in DeclaratorSyntax.Parameters)
+                if (parameters == null)
                 {
-                    var type = item.CreateVerifiedType(DeclaringState);
-                    var param = new DescribedParameter(item.Name, type);
-                    results.Add(param);
+                    var results = new List<IParameter>();
+                    foreach (var item in DeclaratorSyntax.Parameters)
+                    {
+                        var type = item.CreateVerifiedType(DeclaringState);
+                        var param = new DescribedParameter(item.Name, type);
+                        results.Add(param);
+                    }
+                    if (results.Count == 1 && results[0].ParameterType.Equals(PrimitiveTypes.Void))
+                    {
+                        parameters = new IParameter[] { };
+                    }
+                    else
+                    {
+                        parameters = results.ToArray();
+                    }
                 }
-                if (results.Count == 1 && results[0].ParameterType.Equals(PrimitiveTypes.Void))
-                {
-                    parameters = new IParameter[] { };
-                }
-                else
-                {
-                    parameters = results.ToArray();
-                }
+                return parameters;
             }
-            return parameters;
         }
 
         private IType retType;
@@ -138,34 +141,14 @@ namespace Flame.C.Build
             return cachedBody;
         }
 
-        public const IMethod[] GetBaseMethods()
+        public [IMethod] BaseMethods
         {
-            return new IMethod[] { };
+            get { return Enumerable.Empty<IMethod>(); }
         }
 
-        public IBoundObject Invoke(IBoundObject Caller, [IBoundObject] Arguments)
+        public [IGenericParameter] GenericParameters
         {
-            return null;
-        }
-
-        public const [IType] GetGenericArguments()
-        {
-            return Enumerable.Empty<IType>();
-        }
-
-        public const [IGenericParameter] GetGenericParameters()
-        {
-            return Enumerable.Empty<IGenericParameter>();
-        }
-
-        public const IMethod GetGenericDeclaration()
-        {
-            return this;
-        }
-
-        public const IMethod MakeGenericMethod([IType] TypeArguments)
-        {
-            return this;
+            get { return Enumerable.Empty<IGenericParameter>(); }
         }
     }
 }

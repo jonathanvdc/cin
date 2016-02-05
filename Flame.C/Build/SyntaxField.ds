@@ -56,22 +56,22 @@ namespace Flame.C.Build
         }
         public string FullName
         {
-            const get
+            get
             {
                 if (DeclaringType == null) return Name;
                 else return MemberExtensions.CombineNames(DeclaringType.FullName, Name);
             }
         }
 
-        public const [IAttribute] GetAttributes()
+        public [IAttribute] Attributes
         {
-            return new IAttribute[] { new AccessAttribute(AccessModifier.Public) };
+            get { return new IAttribute[] { new AccessAttribute(AccessModifier.Public) }; }
         }
 
         private IType fieldType;
         public IType FieldType
         {
-            const get
+            get
             {
                 if (fieldType == null)
                 {

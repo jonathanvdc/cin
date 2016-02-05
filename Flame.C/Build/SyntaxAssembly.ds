@@ -108,9 +108,9 @@ namespace Flame.C.Build
 
         public string FullName { const get return Name; }
 
-        public [IAttribute] GetAttributes()
+        public [IAttribute] Attributes
         {
-            return Enumerable.Empty<IAttribute>();
+            get { return Enumerable.Empty<IAttribute>(); }
         }
 
         public const IMethod GetEntryPoint()
@@ -130,7 +130,7 @@ namespace Flame.C.Build
 
             foreach (var item in units)
             {
-                foreach (var type in item.GetTypes())
+                foreach (var type in item.Types)
                     if (type.FullName.Equals(FullName))
                 {
                     return true;
@@ -139,19 +139,22 @@ namespace Flame.C.Build
             return false;
         }
 
-        public const IType[] GetTypes()
+        public [IType] Types
         {
-            [IType] results = new IType[] { GlobalType };
-            foreach (var item in units)
+            get
             {
-                results = Enumerable.Concat<IType>(results, item.GetTypes());
+                [IType] results = new IType[] { GlobalType };
+                foreach (var item in units)
+                {
+                    results = Enumerable.Concat<IType>(results, item.Types);
+                }
+                return Enumerable.ToArray<IType>(results);
             }
-            return Enumerable.ToArray<IType>(results);
         }
 
-        public const [INamespaceBranch] GetNamespaces()
+        public [INamespaceBranch] Namespaces
         {
-            return Enumerable.Empty<INamespaceBranch>();
+            get { return Enumerable.Empty<INamespaceBranch>(); }
         }
     }
 }

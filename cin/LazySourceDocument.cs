@@ -43,15 +43,15 @@ namespace cin
                     return new SourceDocument(code, Identifier);
                 }
             }
-            catch (FileNotFoundException ex)
+            catch (FileNotFoundException)
             {
-                Log.LogError(new LogEntry("Error getting source code", "File '" + Identifier + "' was not found"));
+                Log.LogError(new LogEntry("error getting source code", "File '" + Identifier + "' was not found"));
                 return null;
             }
             catch (Exception ex)
             {
-                Log.LogError(new LogEntry("Error getting source code", "'" + Identifier + "' could not be opened"));
-                Log.LogError(new LogEntry("Exception", ex.ToString()));
+                Log.LogError(new LogEntry("error getting source code", "'" + Identifier + "' could not be opened"));
+                Log.LogError(new LogEntry("exception", ex.ToString()));
                 return null;
             }
         }

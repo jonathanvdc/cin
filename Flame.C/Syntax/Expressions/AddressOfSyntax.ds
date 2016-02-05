@@ -28,7 +28,7 @@ namespace Flame.Syntax.C
         {
             var variable = Operand.CreateVariable(State);
             var addrOf = ((IUnmanagedVariable)variable).CreateAddressOfExpression();
-            return new ConversionExpression(addrOf, variable.Type.MakePointerType(PointerKind.TransientPointer));
+            return ConversionExpression.Create(addrOf, variable.Type.MakePointerType(PointerKind.TransientPointer));
         }
 
         public override const string ToString()

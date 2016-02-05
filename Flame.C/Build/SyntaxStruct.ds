@@ -82,9 +82,9 @@ namespace Flame.C.Build
 
         public const ICSyntaxState GetSyntaxState()
         {
-            var descMethod = new DescribedMethod();
-            descMethod.DeclaringType = this;
-            return new SyntaxState(DeclaringState.DeclaringUnit, descMethod,
+            var descMethod = new DescribedMethod("initstruct", this);
+            return new SyntaxState(
+                DeclaringState.DeclaringUnit, descMethod,
                 DeclaringState.Scope, DeclaringState.Log,
                 DeclaringState.MemberProvider, DeclaringState.TypeNamer);
         }
@@ -94,58 +94,21 @@ namespace Flame.C.Build
             const get return MemberExtensions.CombineNames(DeclaringNamespace.FullName, Name);
         }
 
-        public const [IAttribute] GetAttributes()
+        public [IAttribute] Attributes
         {
-            return new IAttribute[]
+            get
             {
-                new AccessAttribute(AccessModifier.Public),
-                PrimitiveAttributes.ValueTypeAttribute
-            };
+                return new IAttribute[]
+                {
+                    new AccessAttribute(AccessModifier.Public),
+                    PrimitiveAttributes.ValueTypeAttribute
+                };
+            }
         }
 
-        public const [IType] GetGenericArguments()
+        public [IGenericParameter] GenericParameters
         {
-            return Enumerable.Empty<IType>();
-        }
-
-        public const [IGenericParameter] GetGenericParameters()
-        {
-            return Enumerable.Empty<IGenericParameter>();
-        }
-
-        public const IType GetGenericDeclaration()
-        {
-            return this;
-        }
-
-        public const IType MakeGenericType([IType] TypeArguments)
-        {
-            return this;
-        }
-
-        public bool IsContainerType
-        {
-            const get return false;
-        }
-
-        public const IContainerType AsContainerType()
-        {
-            return null;
-        }
-
-        public const IArrayType MakeArrayType(int Rank)
-        {
-            return new DescribedArrayType(this, Rank);
-        }
-
-        public const IPointerType MakePointerType(PointerKind Kind)
-        {
-            return new DescribedPointerType(this, Kind);
-        }
-
-        public const IVectorType MakeVectorType(int[] Dimensions)
-        {
-            return new DescribedVectorType(this, Dimensions);
+            get { return Enumerable.Empty<IGenericParameter>(); }
         }
 
         public const IBoundObject GetDefaultValue()
@@ -153,26 +116,26 @@ namespace Flame.C.Build
             return null;
         }
 
+        public IAncestryRules AncestryRules
+        {
+            const get { return DefinitionAncestryRules; }
+        }
+
         #region Members
 
-        public const IType[] GetBaseTypes()
+        public [IType] BaseTypes
         {
-            return new IType[] { };
+            get { return Enumerable.Empty<IType>(); }
         }
 
-        public const IMethod[] GetMethods()
+        public [IMethod] Methods
         {
-            return new IMethod[] { };
+            get { return Enumerable.Empty<IMethod>(); }
         }
 
-        public const IMethod[] GetConstructors()
+        public [IProperty] Properties
         {
-            return new IMethod[] { };
-        }
-
-        public const IProperty[] GetProperties()
-        {
-            return new IProperty[] { };
+            get { return Enumerable.Empty<IProperty>(); }
         }
 
         public bool ApplyDefinition()
@@ -212,23 +175,18 @@ namespace Flame.C.Build
         }
 
         private IField[] cachedFields;
-        public const IField[] GetFields()
+        public IField[] GetFields()
         {
             if (!ApplyDefinition())
             {
                 /*DeclaringState.Log.LogError(new LogEntry("Forward reference",
                     "Struct '" + Name + "' is used before it is defined.",
                     DeclarationSyntax.Location));*/
-                return new IField[] { }; // Keep it civil by returning an array.
+                return new IField[] { }; // Keep it civil by returning an empty array.
             }
             return cachedFields;
         }
-        public IField[] Fields { const get return GetFields(); }
-
-        public const ITypeMember[] GetMembers()
-        {
-            return GetFields();
-        }
+        public [IField] Fields { get { return GetFields(); } }
 
         #endregion
     }

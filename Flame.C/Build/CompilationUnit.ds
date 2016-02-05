@@ -21,16 +21,16 @@ namespace Flame.C.Build
         public string FullName { const get return Name; }
         public DeclarationScope Scope { const get; private set; }
 
-        public const [IAttribute] GetAttributes()
+        public [IAttribute] Attributes
         {
-            return Assembly.GetAttributes();
+            get { return Assembly.Attributes; }
         }
 
         public ICSyntaxState GetSyntaxState()
         {
-            var descMethod = new DescribedMethod();
-            descMethod.DeclaringType = Assembly.GlobalType;
-            return new SyntaxState(this, descMethod, Scope,
+            var descMethod = new DescribedMethod("initmodule", Assembly.GlobalType);
+            return new SyntaxState(
+                this, descMethod, Scope,
                 Assembly.Log, Assembly.TypeNamer);
         }
 
@@ -54,11 +54,7 @@ namespace Flame.C.Build
 
         public [IField] Globals { const get return Scope.LocalFields; }
         public [IMethod] Functions { const get return Scope.LocalFunctions; }
-        public [ICType] Types { const get return Scope.LocalTypes; }
-
-        public const IType[] GetTypes()
-        {
-            return allTypes.ToArray();
-        }
+        public [ICType] CTypes { const get return Scope.LocalTypes; }
+        public [IType] Types { const get return allTypes; }
     }
 }

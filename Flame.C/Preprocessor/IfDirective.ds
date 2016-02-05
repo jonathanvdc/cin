@@ -38,7 +38,7 @@ namespace Flame.C.Preprocessor
             if (expr == null)
                 return true;
 
-            var eval = new ConversionExpression(expr, PrimitiveTypes.Boolean).Evaluate();
+            var eval = ConversionExpression.Create(expr, PrimitiveTypes.Boolean).Evaluate();
             if (eval == null)
             {
                 State.Environment.Log.LogError(new LogEntry("Could not evaluate expression",

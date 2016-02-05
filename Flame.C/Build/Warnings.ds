@@ -5,52 +5,26 @@ using Flame.Compiler;
 
 namespace Flame.C.Build
 {
-    public static class Warnings
+    /// <summary>
+    /// A number of cin-specific warnings.
+    /// </summary>
+    public static class CWarnings
     {
-        public const string Pedantic = "pedantic";
-        public const string Trigraphs = "trigraphs";
-        public const string LanguageExtensionTokenWarnings = "Wlanguage-extension-token";
-        public const string TrigraphWarnings = "Wtrigraphs";
-        public const string ExtraSemicolonWarnings = "Wextra-semi";
-        public const string ShadowWarnings = "Wshadow";
-
-        public static bool IsPedantic[this ICompilerLog Log]
+        static this()
         {
-            const get return Log.Options.GetOption<bool>(Pedantic, false);
+            CWarnings.Trigraphs = new WarningDescription("trigraphs", Warnings.Extra);
+            CWarnings.ExtraSemicolon = new WarningDescription("extra-semicolon", Warnings.Pedantic);
+            CWarnings.LanguageExtensionToken = new WarningDescription("language-extension-token", Warnings.Pedantic);
         }
 
-        public static const bool UsePedanticWarnings(this ICompilerLog Log, string Name)
-        {
-            if (Log.Options.HasOption(Name))
-            {
-                return Log.Options.GetOption<bool>(Name, false);
-            }
-            else
-            {
-                return Log.IsPedantic;
-            }
-        }
+        public const string TrigraphsFlag = "trigraphs";
+        public WarningDescription LanguageExtensionToken { get; private set; }
+        public WarningDescription Trigraphs { get; private set; }
+        public WarningDescription ExtraSemicolon { get; private set; }
 
         public static bool UseTrigraphs[this ICompilerLog Log]
         {
-            const get return Log.Options.GetOption<bool>(Trigraphs, true);
-        }
-
-        public static bool ShowTrigraphWarnings[this ICompilerLog Log]
-        {
-            const get return Log.Options.GetOption<bool>(TrigraphWarnings, true);
-        }
-        public static bool ShowLanguageExtensionTokenWarnings[this ICompilerLog Log]
-        {
-            const get return Log.UsePedanticWarnings(LanguageExtensionTokenWarnings);
-        }
-        public static bool ShowExtraSemicolonWarnings[this ICompilerLog Log]
-        {
-            const get return Log.UsePedanticWarnings(ExtraSemicolonWarnings);
-        }
-        public static bool ShowShadowWarnings[this ICompilerLog Log]
-        {
-            const get return Log.UsePedanticWarnings(ShadowWarnings);
+            get { return Log.Options.GetOption<bool>(TrigraphsFlag, true); }
         }
     }
 }

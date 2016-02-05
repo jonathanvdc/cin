@@ -27,6 +27,7 @@
       <Compile Include="Build/SyntaxFunction.ds" />
       <Compile Include="Build/SyntaxStruct.ds" />
       <Compile Include="Build/SyntaxTypedef.ds" />
+      <Compile Include="Build/TypedefAncestryRules.ds" />
       <Compile Include="Build/TypedefUnwrappingTransformer.ds" />
       <Compile Include="Build/Warnings.ds" />
   </ItemGroup>
@@ -151,11 +152,13 @@
     <Compile Include="Syntax/DelimitedList.ds" />
     <Compile Include="Syntax/ICSyntaxState.ds" />
     <Compile Include="Syntax/IDeclarationSyntax.ds" />
+    <Compile Include="Syntax/LocalScopeStack.ds" />
     <Compile Include="Syntax/SeparatedItem.ds" />
     <Compile Include="Syntax/SeparatedList.ds" />
     <Compile Include="Syntax/SingleVariableDeclaration.ds" />
     <Compile Include="Syntax/SyntaxState.ds" />
     <Compile Include="Syntax/SyntaxStateBinder.ds" />
+    <Compile Include="Syntax/TagStack.ds" />
   </ItemGroup>
   <ItemGroup Name="Variables">
       <Compile Include="Variables/AssignedVariable.ds" />

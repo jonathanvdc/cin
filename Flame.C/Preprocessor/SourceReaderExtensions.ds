@@ -211,7 +211,10 @@ namespace Flame.C.Preprocessor
             {
                 return Trigraphs;
             }
-            else return new Dictionary<string, char>();
+            else
+            {
+                return new Dictionary<string, char>();
+            }
         }
 
         public static ISourceReader PreprocessCharacters(this ISourceReader Reader, ICompilerLog Log)
@@ -219,7 +222,7 @@ namespace Flame.C.Preprocessor
             var tris = Log.GetTrigraphs();
             // Warn for trigraphs if trigraphs have not been requested explicitly, or if
             // warnings for trigraphs have been requested.
-            bool warnTrigraphs = Log.ShowTrigraphWarnings;
+            bool warnTrigraphs = CWarnings.Trigraphs.UseWarning(Log.Options);
 
             var builder = new PreprocessedSourceBuilder();
             while (!Reader.IsEmpty)
@@ -234,8 +237,10 @@ namespace Flame.C.Preprocessor
                             var loc = builder.CurrentLocation;
                             builder.Pop(item.Key.Length);
                             var startLoc = builder.CurrentLocation;
-                            Log.LogWarning(new LogEntry("Trigraph detected",
-                                "Converted trigraph '" + item.Key + "' to '" + (string)item.Value + "'. [-Wtrigraphs]",
+                            Log.LogWarning(new LogEntry(
+                                "trigraph detected",
+                                CWarnings.Trigraphs.CreateMessage(
+                                    "converted trigraph '" + item.Key + "' to '" + (string)item.Value + "'. "),
                                 startLoc.Concat(loc)));
                             builder.Append(item.Value);
                         }

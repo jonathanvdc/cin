@@ -83,73 +83,41 @@ namespace Flame.C.Build
 
         public const ICSyntaxState GetSyntaxState()
         {
-            var descMethod = new DescribedMethod();
-            descMethod.DeclaringType = this;
-            return new SyntaxState(DeclaringState.DeclaringUnit, descMethod,
+            var descMethod = new DescribedMethod("initenum", this);
+            return new SyntaxState(
+                DeclaringState.DeclaringUnit, descMethod,
                 DeclaringState.Scope, DeclaringState.Log,
                 DeclaringState.MemberProvider, DeclaringState.TypeNamer);
         }
 
         public string FullName
         {
-            const get return MemberExtensions.CombineNames(DeclaringNamespace.FullName, Name);
+            get { return MemberExtensions.CombineNames(DeclaringNamespace.FullName, Name); }
         }
 
-        public const [IAttribute] GetAttributes()
+        public [IAttribute] Attributes
         {
-            return new IAttribute[]
+            get
             {
-                new AccessAttribute(AccessModifier.Public),
-                PrimitiveAttributes.EnumAttribute
-            };
+                return new IAttribute[]
+                {
+                    new AccessAttribute(AccessModifier.Public),
+                    PrimitiveAttributes.EnumAttribute
+                };
+            }
         }
 
-        public const [IType] GetGenericArguments()
+        public IAncestryRules AncestryRules
         {
-            return Enumerable.Empty<IType>();
+            const get { return DefinitionAncestryRules; }
         }
 
-        public const [IGenericParameter] GetGenericParameters()
+        public [IGenericParameter] GenericParameters
         {
-            return Enumerable.Empty<IGenericParameter>();
+            get { return Enumerable.Empty<IGenericParameter>(); }
         }
 
-        public const IType GetGenericDeclaration()
-        {
-            return this;
-        }
-
-        public const IType MakeGenericType([IType] TypeArguments)
-        {
-            return this;
-        }
-
-        public bool IsContainerType
-        {
-            const get return false;
-        }
-
-        public const IContainerType AsContainerType()
-        {
-            return null;
-        }
-
-        public const IArrayType MakeArrayType(int Rank)
-        {
-            return new DescribedArrayType(this, Rank);
-        }
-
-        public const IPointerType MakePointerType(PointerKind Kind)
-        {
-            return new DescribedPointerType(this, Kind);
-        }
-
-        public const IVectorType MakeVectorType(int[] Dimensions)
-        {
-            return new DescribedVectorType(this, Dimensions);
-        }
-
-        public const IBoundObject GetDefaultValue()
+        public IBoundObject GetDefaultValue()
         {
             return null;
         }
@@ -157,9 +125,9 @@ namespace Flame.C.Build
         #region Members
 
         private IType enumType;
-        public const IType UnderlyingType
+        public IType UnderlyingType
         {
-            const get
+            get
             {
                 if (enumType == null)
                 {
@@ -188,31 +156,34 @@ namespace Flame.C.Build
             }
         }
 
-        public const IType[] GetBaseTypes()
+        public [IType] BaseTypes
         {
-            if (!IsDefinition)
+            get
             {
-                return new IType[] { };
+                if (!IsDefinition)
+                {
+                    return new IType[] { };
+                }
+                else
+                {
+                    return new IType[] { UnderlyingType };
+                }
             }
-            else
-            {
-                return new IType[] { UnderlyingType };
-            }
         }
 
-        public const IMethod[] GetMethods()
+        public [IMethod] Methods
         {
-            return new IMethod[] { };
+            get { return new IMethod[] { }; }
         }
 
-        public const IMethod[] GetConstructors()
+        public [IMethod] Constructors
         {
-            return new IMethod[] { };
+            get { return new IMethod[] { }; }
         }
 
-        public const IProperty[] GetProperties()
+        public [IProperty] Properties
         {
-            return new IProperty[] { };
+            get { return new IProperty[] { }; }
         }
 
         public bool ApplyDefinition()
@@ -241,19 +212,16 @@ namespace Flame.C.Build
         }
 
         private IField[] cachedFields;
-        public const IField[] GetFields()
+        public [IField] Fields
         {
-            if (!ApplyDefinition())
+            get
             {
-                return new IField[] { }; // Keep it civil by returning an array.
+                if (!ApplyDefinition())
+                {
+                    return new IField[] { }; // Keep it civil by returning an array.
+                }
+                return cachedFields;
             }
-            return cachedFields;
-        }
-        public IField[] Fields { const get return GetFields(); }
-
-        public const ITypeMember[] GetMembers()
-        {
-            return GetFields();
         }
 
         #endregion

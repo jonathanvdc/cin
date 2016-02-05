@@ -23,11 +23,11 @@ namespace Flame.Syntax.C
         	const get return Identifier.Location;
         }
 
-        private static const IField GetEnumField(string Name, ISyntaxState State)
+        private static IField GetEnumField(string Name, ISyntaxState State)
         {
             foreach (var item in ((ICSyntaxState)State).Scope.AllEnumTypes)
             {
-                foreach (var field in item.GetFields())
+                foreach (var field in item.Fields)
                     if (field.Name.Equals(Name))
                 {
                     return field;

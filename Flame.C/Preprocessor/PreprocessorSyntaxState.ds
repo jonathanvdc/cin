@@ -22,7 +22,7 @@ namespace Flame.C.Preprocessor
         {
             this.Log = State.Environment.Log;
             this.Method = new DescribedMethod("preprocessor", null);
-            this.Binder = EmptyBinder;
+            this.Binder = new ScopedBinder(EmptyBinder, this);
             this.MemberProvider = new MemberProvider(Binder);
             this.TypeNamer = new TypeNamerBase();
             PushScope();
@@ -30,7 +30,7 @@ namespace Flame.C.Preprocessor
         public const this(set ICompilerLog Log)
         {
             this.Method = new DescribedMethod("preprocessor", null);
-            this.Binder = EmptyBinder;
+            this.Binder = new ScopedBinder(EmptyBinder, this);
             this.MemberProvider = new MemberProvider(Binder);
             this.TypeNamer = new TypeNamerBase();
             PushScope();
@@ -38,50 +38,33 @@ namespace Flame.C.Preprocessor
 
         public IType CurrentType
         {
-            const get
-            {
-                var declType = Method.DeclaringType;
-                if (declType.IsGeneric && declType.IsGenericDeclaration)
-                {
-                	return declType.MakeGenericType(([IType])declType.GetGenericParameters());
-                }
-                else
-                {
-                	return declType;
-                }
-            }
+            get { return Method.DeclaringType.MakeGenericType(Method.DeclaringType.GenericParameters); }
         }
 
         public IMethod Method { const get; private set; }
-        public IBinder Binder { const get; private set; }
+        public IScopedBinder Binder { const get; private set; }
         public IConverter<IType, string> TypeNamer { const get; private set; }
         public IMemberProvider MemberProvider { const get; private set; }
         public ICompilerLog Log { const get; private set; }
 
         public IType ReturnType
         {
-            const get
-            {
-                return Method.ReturnType;
-            }
+            get { return Method.ReturnType; }
         }
         public IType DeclaringType
         {
-            const get
-            {
-                return Method.DeclaringType;
-            }
+            get { return Method.DeclaringType; }
         }
         public IVariable DeclareVariable(string Name, IVariable Variable, SourceLocation Location)
         {
-            Log.LogError(new LogEntry("Invalid preprocessor usage", "The preprocessor cannot declare variables.", Location));
+            Log.LogError(new LogEntry("invalid preprocessor usage", "the preprocessor cannot declare variables.", Location));
             return null;
         }
-        public const IVariable GetVariable(string Name)
+        public IVariable GetVariable(string Name)
         {
             return new ExpressionVariable(new Int32Expression(0));
         }
-        public const DeclaredVariable GetDeclaredVariable(string Name)
+        public DeclaredVariable GetDeclaredVariable(string Name)
         {
             return new DeclaredVariable(GetVariable(Name), null);
         }
@@ -90,7 +73,13 @@ namespace Flame.C.Preprocessor
             return false;
         }
 
+        public UniqueTag Tag { get { return null; } }
+
         public void PushScope()
+        {
+        }
+
+        public void PushScope(UniqueTag Tag)
         {
         }
 

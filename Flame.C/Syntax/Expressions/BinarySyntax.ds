@@ -67,7 +67,7 @@ namespace Flame.Syntax.C
         {
             var lExpr = Left.CreateVerifiedExpression(State);
             var rExpr = Right.CreateVerifiedExpression(State);
-            return new DirectBinaryExpression(lExpr, Op, rExpr);
+            return DirectBinaryExpression.Create(lExpr, Op, rExpr);
         }
 
         public const CodeBuilder GetCode()

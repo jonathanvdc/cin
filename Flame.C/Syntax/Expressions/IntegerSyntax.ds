@@ -9,7 +9,7 @@ namespace Flame.Syntax.C
     {
         public const this(set Token Value);
 
-        public override const IExpression CreateExpression(ISyntaxState State, Token Value)
+        protected override const IExpression CreateExpression(ISyntaxState State, Token Value)
         {
             return new Int32Expression(int.Parse(Value.TokenValue));
         }

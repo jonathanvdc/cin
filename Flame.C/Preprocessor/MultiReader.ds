@@ -12,7 +12,7 @@ namespace Flame.C.Preprocessor
         {
             this.readers = new List<ISourceReader>();
             this.readerIndex = 0;
-            AppendSource(Chunks);
+            Append(Chunks);
         }
         public const this([ISourceReader] Readers)
         {

@@ -73,7 +73,7 @@ namespace Flame.C.Build
                 {
                     innerVal = new Int32Expression(Index);
                 }
-                cachedValue = new ConversionExpression(innerVal, EnumType.UnderlyingType);
+                cachedValue = ConversionExpression.Create(innerVal, EnumType.UnderlyingType);
             }
             return cachedValue;
         }
@@ -101,9 +101,9 @@ namespace Flame.C.Build
             const get return EnumType;
         }
 
-        public const [IAttribute] GetAttributes()
+        public [IAttribute] Attributes
         {
-            return new IAttribute[] { new AccessAttribute(AccessModifier.Public) };
+            get { return new IAttribute[] { new AccessAttribute(AccessModifier.Public) }; }
         }
     }
 }

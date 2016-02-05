@@ -28,7 +28,6 @@ namespace Flame.C.Lexer
         FalseLiteral = 14,
         TrueLiteral = 15,
         AutoKeyword = 17,
-        IsKeyword = 19,
         AsKeyword = 20,
         IfKeyword = 21,
         ElseKeyword = 22,

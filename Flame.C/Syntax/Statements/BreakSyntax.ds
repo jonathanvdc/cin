@@ -25,7 +25,7 @@ namespace Flame.Syntax.C
 
         public override IStatement CreateStatement(ISyntaxState State)
         {
-            return new BreakStatement();
+            return new BreakStatement(State.Tag);
         }
 
         protected override CodeBuilder GetStatementCode()

@@ -6,6 +6,8 @@ using Flame.C.Parser;
 using Flame.C.Preprocessor;
 using Flame.Compiler;
 using Flame.Compiler.Projects;
+using Flame.Front;
+using Flame.Front.Options;
 using Flame.Front.Projects;
 using Flame.Syntax;
 using Flame.Syntax.C;
@@ -15,6 +17,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Flame.Front.Target;
+using Flame.Verification;
 
 namespace cin
 {
@@ -38,8 +42,21 @@ namespace cin
 
         public IProject Parse(ProjectPath Path, ICompilerLog Log)
         {
-            return new SingleFileProject(Path);
+			return new SingleFileProject(Path, Log.Options.GetTargetPlatform());
         }
+
+		public IProject MakeProject(IProject Project, ProjectPath Path, ICompilerLog Log)
+		{
+			Log.LogWarning(new LogEntry(
+				"ignored '-make-project'",
+				"the '-make-project' option was ignored because cin does not support any C project formats yet."));
+			return Project;
+		}
+
+		public IEnumerable<ParsedProject> Partition(IEnumerable<ParsedProject> Projects)
+		{
+			return new ParsedProject[] { new ParsedProject(Projects.First().CurrentPath, UnionProject.CreateUnion(Projects.Select(item => item.Project).ToArray())) };
+		}
 
         private static IConverter<IType, string> GetTypeNamer(ICompilerOptions Options)
         {
@@ -70,15 +87,15 @@ namespace cin
             {
                 return Item.GetSource(Parameters.CurrentPath.AbsolutePath.Path);
             }
-            catch (FileNotFoundException ex)
+            catch (FileNotFoundException)
             {
-                Parameters.Log.LogError(new LogEntry("Error getting source code", "File '" + Item.SourceIdentifier + "' was not found"));
+                Parameters.Log.LogError(new LogEntry("error getting source code", "file '" + Item.SourceIdentifier + "' was not found."));
                 return null;
             }
             catch (Exception ex)
             {
-                Parameters.Log.LogError(new LogEntry("Error getting source code", "'" + Item.SourceIdentifier + "' could not be opened"));
-                Parameters.Log.LogError(new LogEntry("Exception", ex.ToString()));
+                Parameters.Log.LogError(new LogEntry("error getting source code", "'" + Item.SourceIdentifier + "' could not be opened."));
+                Parameters.Log.LogError(new LogEntry("exception", ex.ToString()));
                 return null;
             }
         }
@@ -97,7 +114,7 @@ namespace cin
 
         public static Task<CompilationUnit> ParseCompilationUnitAsync(IProjectSourceItem SourceItem, SyntaxAssembly Assembly, CompilationParameters Parameters)
         {
-            Parameters.Log.LogEvent(new LogEntry("Status", "Parsing " + SourceItem.SourceIdentifier));
+            Parameters.Log.LogEvent(new LogEntry("Status", "parsing " + SourceItem.SourceIdentifier));
             return Task.Run(() =>
             {
                 var code = GetSourceSafe(SourceItem, Parameters);
@@ -107,7 +124,7 @@ namespace cin
                 }
                 var parser = Preprocess(code, Parameters);
                 var unit = ParseCompilationUnit(parser, Assembly);
-                Parameters.Log.LogEvent(new LogEntry("Status", "Parsed " + SourceItem.SourceIdentifier));
+                Parameters.Log.LogEvent(new LogEntry("Status", "parsed " + SourceItem.SourceIdentifier));
                 return unit;
             });
         }
@@ -124,7 +141,10 @@ namespace cin
             }
             catch (Exception ex)
             {
-                Assembly.Log.LogError(new LogEntry("Error parsing source", "An error occurred while parsing source code.", TokenParser.PeekNoTrivia(TokenParser.CurrentPosition).TokenPeek.FullLocation));
+                Assembly.Log.LogError(new LogEntry(
+					"error parsing source", 
+					"an error occurred while parsing source code.", 
+					TokenParser.PeekNoTrivia(TokenParser.CurrentPosition).TokenPeek.FullLocation));
                 Assembly.Log.LogException(ex);
                 throw;
             }
@@ -138,7 +158,10 @@ namespace cin
                 }
                 catch (Exception ex)
                 {
-                    Assembly.Log.LogError(new LogEntry("Error applying declaration", "An error occurred while applying a declaration.", item.GetSourceLocation()));
+                    Assembly.Log.LogError(new LogEntry(
+						"error applying declaration", 
+						"an error occurred while applying a declaration.", 
+						item.GetSourceLocation()));
                     Assembly.Log.LogException(ex);
                     throw;
                 }
@@ -146,5 +169,28 @@ namespace cin
 
             return unit;
         }
+
+		public PassPreferences GetPassPreferences(ICompilerLog Log)
+		{
+			return new PassPreferences(new PassCondition[]
+			{
+				new PassCondition(
+					PassExtensions.EliminateDeadCodePassName,
+					optInfo => optInfo.OptimizeMinimal || optInfo.OptimizeDebug),
+				new PassCondition(
+					InfiniteRecursionPass.InfiniteRecursionPassName,
+					optInfo => InfiniteRecursionPass.IsUseful(optInfo.Log))
+			},
+				new PassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>[]
+			{
+				new PassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
+					VerifyingDeadCodePass.Instance,
+					PassExtensions.EliminateDeadCodePassName),
+				
+				new PassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
+					InfiniteRecursionPass.Instance,
+					InfiniteRecursionPass.InfiniteRecursionPassName)
+			});
+		}
     }
 }

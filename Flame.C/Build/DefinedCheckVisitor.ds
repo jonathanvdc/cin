@@ -1,4 +1,4 @@
-
+using System.Collections.Generic;
 using Flame.Build;
 using Flame.Compiler;
 
@@ -37,7 +37,7 @@ namespace Flame.C.Build
             return true;
         }
 
-        protected override const bool MakeVectorType(bool ElementType, int[] Dimensions)
+        protected override const bool MakeVectorType(bool ElementType, IReadOnlyList<int> Dimensions)
         {
             return ElementType;
         }

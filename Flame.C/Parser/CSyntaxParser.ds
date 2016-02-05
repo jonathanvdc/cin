@@ -241,10 +241,11 @@ namespace Flame.C.Parser
         {
             var typeOfKeyword = Tokens.NextNoTrivia(TokenType.TypeOfKeyword, Log);
 
-            if (Log.ShowLanguageExtensionTokenWarnings)
+            if (CWarnings.LanguageExtensionToken.UseWarning(Log.Options))
             {
-                Log.LogWarning(new LogEntry("Extension used",
-                    "'" + typeOfKeyword.TokenValue + "' is a compiler extension. [-" + Warnings.LanguageExtensionTokenWarnings + "]",
+                Log.LogWarning(new LogEntry("extension used",
+                    CWarnings.LanguageExtensionToken.CreateMessage(
+                        "'" + typeOfKeyword.TokenValue + "' is a compiler extension. "),
                     typeOfKeyword.Location));
             }
 
@@ -454,7 +455,7 @@ namespace Flame.C.Parser
             {
                 var lParen = Parser.NextNoTrivia(TokenType.LParen, Log);
                 var peek = Parser.PeekNoTrivia();
-                if ((peek.Type.IsValueToken() || peek.Type == TokenType.Not || peek.Type == TokenType.Asterisk || peek.Type == TokenType.Tilde || peek.Type == TokenType.RParen || (peek.Type.IsKeyword() && !peek.Type.IsTypeBinaryExpressionToken())))
+                if ((peek.Type.IsValueToken() || peek.Type == TokenType.Not || peek.Type == TokenType.Asterisk || peek.Type == TokenType.Tilde || peek.Type == TokenType.RParen || peek.Type.IsKeyword()))
                 {
                     return ParseCastExpression(RParen, declSyntax, lParen, Parser);
                 }
@@ -594,8 +595,7 @@ namespace Flame.C.Parser
                 return 3;
             }
             else if (Token == TokenType.GreaterThanOrEquals || Token == TokenType.GreaterThan ||
-                       Token == TokenType.LessThanOrEquals || Token == TokenType.LessThan ||
-                       Token == TokenType.IsKeyword)
+                     Token == TokenType.LessThanOrEquals || Token == TokenType.LessThan)
             {
                 return 4;
             }
@@ -1234,15 +1234,20 @@ namespace Flame.C.Parser
             if (Tokens.PeekNoTrivia().Type == TokenType.Semicolon)
             {
                 var extraSemi = Tokens.NextNoTrivia(TokenType.Semicolon, Log);
-                if (Log.ShowExtraSemicolonWarnings)
+                if (CWarnings.ExtraSemicolon.UseWarning(Log.Options))
                 {
-                    Log.LogWarning(new LogEntry("Extra semicolon",
-                        "Extra semicolon outside of function '" + Declaration.Name + "'. [-" + Warnings.ExtraSemicolonWarnings + "]",
+                    Log.LogWarning(new LogEntry(
+                        "extra semicolon",
+                        CWarnings.ExtraSemicolon.CreateMessage(
+                            "extra semicolon outside of function '" + Declaration.Name + "'. "),
                         extraSemi.Location));
                 }
                 return new FunctionDefinitionSyntax(Declaration, body, extraSemi);
             }
-            else return new FunctionDefinitionSyntax(Declaration, body);
+            else
+            {
+                return new FunctionDefinitionSyntax(Declaration, body);
+            }
         }
 
         public virtual FunctionDefinitionSyntax ParseFunctionDefinition(ITokenStream Tokens)

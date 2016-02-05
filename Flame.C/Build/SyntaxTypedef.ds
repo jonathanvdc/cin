@@ -14,7 +14,8 @@ namespace Flame.C.Build
 {
     public class SyntaxTypedef : ICType
     {
-        public const this(set IType ElementType, set IDeclaratorSyntax DeclaratorSyntax,
+        public const this(
+            set IType ElementType, set IDeclaratorSyntax DeclaratorSyntax,
             set ICSyntaxState DeclaringState);
 
         public IType ElementType { const get; private set; }
@@ -30,11 +31,11 @@ namespace Flame.C.Build
         private IType type;
         public IType Type
         {
-            const get
+            get
             {
                 if (type == null)
                 {
-                    return DeclaratorSyntax.CreateType(ElementType, DeclaringState);
+                    type = DeclaratorSyntax.CreateType(ElementType, DeclaringState);
                 }
                 return type;
             }
@@ -55,54 +56,19 @@ namespace Flame.C.Build
             const get return MemberExtensions.CombineNames(DeclaringNamespace.FullName, Name);
         }
 
-        public const [IAttribute] GetAttributes()
+        public IAncestryRules AncestryRules
         {
-            return Type.GetAttributes();
+            const get { return TypedefAncestryRules; }
         }
 
-        public const [IType] GetGenericArguments()
+        public [IAttribute] Attributes
         {
-            return Type.GetGenericArguments();
+            get { return Type.Attributes; }
         }
 
-        public const [IGenericParameter] GetGenericParameters()
+        public [IGenericParameter] GenericParameters
         {
-            return Type.GetGenericParameters();
-        }
-
-        public const IType GetGenericDeclaration()
-        {
-            return this;
-        }
-
-        public const IType MakeGenericType([IType] TypeArguments)
-        {
-            return this;
-        }
-
-        public bool IsContainerType
-        {
-            const get return false;
-        }
-
-        public const IContainerType AsContainerType()
-        {
-            return null;
-        }
-
-        public const IArrayType MakeArrayType(int Rank)
-        {
-            return new DescribedArrayType(this, Rank);
-        }
-
-        public const IPointerType MakePointerType(PointerKind Kind)
-        {
-            return new DescribedPointerType(this, Kind);
-        }
-
-        public const IVectorType MakeVectorType(int[] Dimensions)
-        {
-            return new DescribedVectorType(this, Dimensions);
+            get { return Type.GenericParameters; }
         }
 
         public const IBoundObject GetDefaultValue()
@@ -112,34 +78,24 @@ namespace Flame.C.Build
 
         #region Members
 
-        public const IType[] GetBaseTypes()
+        public [IType] BaseTypes
         {
-            return Type.GetBaseTypes();
+            get { return Type.BaseTypes; }
         }
 
-        public const IMethod[] GetMethods()
+        public [IMethod] Methods
         {
-            return Type.GetMethods();
+            get { return Type.Methods; }
         }
 
-        public const IMethod[] GetConstructors()
+        public [IProperty] Properties
         {
-            return Type.GetConstructors();
+            get { return Type.Properties; }
         }
 
-        public const IProperty[] GetProperties()
+        public [IField] Fields
         {
-            return Type.GetProperties();
-        }
-
-        public const IField[] GetFields()
-        {
-            return Type.GetFields();
-        }
-
-        public const ITypeMember[] GetMembers()
-        {
-            return Type.GetMembers();
+            get { return Type.Fields; }
         }
 
         #endregion

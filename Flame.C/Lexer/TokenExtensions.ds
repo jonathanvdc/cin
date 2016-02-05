@@ -124,11 +124,6 @@ namespace Flame.C.Lexer
 
         #region Binary
 
-        public static const bool IsTypeBinaryExpressionToken(this TokenType Token)
-        {
-            return Token == TokenType.IsKeyword;
-        }
-
         public static const bool IsBinaryExpressionToken(this TokenType Token)
         {
             return Token == TokenType.AndAnd || Token == TokenType.And ||
@@ -139,8 +134,7 @@ namespace Flame.C.Lexer
         		Token == TokenType.NotEquals || Token == TokenType.EqualsEquals ||
         		Token == TokenType.Plus || Token == TokenType.Minus ||
         		Token == TokenType.Asterisk || Token == TokenType.Slash ||
-        		Token == TokenType.IsKeyword || Token == TokenType.LeftShift ||
-        		Token.IsAssignmentToken();
+        		Token == TokenType.LeftShift || Token.IsAssignmentToken();
         }
 
         #endregion

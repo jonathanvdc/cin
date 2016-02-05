@@ -56,7 +56,7 @@ namespace Flame.Syntax.C
             }
             else
             {
-                var placeholder = new LateBoundVariable(Variable.Type);
+                var placeholder = new LocalVariable(Variable.Type);
 
                 callerExpr = new Expressions.InitializedExpression(placeholder.CreateSetStatement(Variable.CreateGetExpression()),
                     placeholder.CreateAddressOfExpression(),
