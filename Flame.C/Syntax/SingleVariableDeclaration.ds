@@ -67,14 +67,16 @@ namespace Flame.Syntax.C
             {
                 if (ElementType == null)
                 {
-                    State.Log.LogError(new LogEntry("Type inference error",
-                        "Could not infer type in variable declaration '" + this.GetCode().Trim().ToString() + "' as the variable was not initialized with an expression",
+                    State.Log.LogError(new LogEntry(
+                        "type inference error",
+                        "could not infer type in variable declaration '" + this.GetCode().Trim().ToString() + "' as the variable was not initialized with an expression",
                         Location));
                 }
                 else if (!ElementType.IsDefined)
                 {
-                    State.Log.LogWarning(new LogEntry("Variable of undefined type",
-                        "A variable of incomplete type '" + State.TypeNamer.Convert(ElementType) + "' is declared. " +
+                    State.Log.LogWarning(new LogEntry(
+                        "variable of undefined type",
+                        "a variable of incomplete type '" + State.TypeNamer.Convert(ElementType) + "' is declared. " +
                         "This is not allowed by the C standard, though cin allows it if said type is completed " +
                         "before its definition is required.",
                         Location));
@@ -96,8 +98,9 @@ namespace Flame.Syntax.C
                 {
                     if (!type.IsDefined)
                     {
-                        State.Log.LogError(new LogEntry("Variable of undefined type",
-                            "Declaring and assigning a variable of incomplete type '" + State.TypeNamer.Convert(type) + "' " +
+                        State.Log.LogError(new LogEntry(
+                            "variable of undefined type",
+                            "declaring and assigning a variable of incomplete type '" + State.TypeNamer.Convert(type) + "' " +
                             "requires a well-defined type.",
                             Location));
                     }

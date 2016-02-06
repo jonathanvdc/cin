@@ -41,7 +41,8 @@ namespace Flame.C.Preprocessor
             }
             else
             {
-                State.Environment.Log.LogError(new LogEntry("Invalid '#" + Name.TokenValue + "' directive",
+                State.Environment.Log.LogError(new LogEntry(
+                    "invalid '#" + Name.TokenValue + "' directive",
                     "'#" + Name.TokenValue + "' directive could not be parsed because no include path was found.",
                     HashToken.Location.Concat(Name.Location)));
                 return null;

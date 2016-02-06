@@ -179,7 +179,7 @@ namespace Flame.C.Build
         {
             if (!ApplyDefinition())
             {
-                /*DeclaringState.Log.LogError(new LogEntry("Forward reference",
+                /*DeclaringState.Log.LogError(new LogEntry("forward reference",
                     "Struct '" + Name + "' is used before it is defined.",
                     DeclarationSyntax.Location));*/
                 return new IField[] { }; // Keep it civil by returning an empty array.

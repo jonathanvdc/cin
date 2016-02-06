@@ -41,8 +41,9 @@ namespace Flame.C.Preprocessor
             var eval = ConversionExpression.Create(expr, PrimitiveTypes.Boolean).Evaluate();
             if (eval == null)
             {
-                State.Environment.Log.LogError(new LogEntry("Could not evaluate expression",
-                    "Macro expression '" + Expression.GetCode().Trim().ToString() + "' could not be evaluated at compile-time. " +
+                State.Environment.Log.LogError(new LogEntry(
+                    "could not evaluate expression",
+                    "macro expression '" + Expression.GetCode().Trim().ToString() + "' could not be evaluated at compile-time. " +
                     "It is assumed to evaluate to true. Sorry :(",
                     Expression.GetSourceLocation()));
                 return true;

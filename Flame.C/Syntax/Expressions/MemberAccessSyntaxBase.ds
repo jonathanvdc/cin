@@ -100,7 +100,8 @@ namespace Flame.Syntax.C
                 exprType = variable.Type;
                 if (!exprType.IsDefined)
                 {
-                    State.Log.LogError(new LogEntry("Forward reference",
+                    State.Log.LogError(new LogEntry(
+                        "forward reference",
                         "'" + State.TypeNamer.Convert(exprType) + "' is not defined yet, which precludes member access.",
                         MemberAccessLocation));
                     return null;

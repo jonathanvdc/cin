@@ -63,8 +63,9 @@ namespace Flame.Syntax.C
 
             if (matchedExpr == null)
             {
-                State.Log.LogError(new LogEntry("Non-exhaustive generic switch",
-                    "Generic type switch on '" + Target.GetCode().Trim().ToString() + "' was not exhaustive and does not have a default clause.",
+                State.Log.LogError(new LogEntry(
+                    "non-exhaustive generic switch",
+                    "generic type switch on '" + Target.GetCode().Trim().ToString() + "' was not exhaustive and does not have a default clause.",
                     Location));
                 return null;
             }

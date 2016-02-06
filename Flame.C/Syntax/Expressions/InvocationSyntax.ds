@@ -99,12 +99,12 @@ namespace Flame.Syntax.C
             		}
                     string listHeader = "Method call '" + thisCode.ToString() + "' could not be resolved. Expected signature compatible with " + expectedSignature.ToString() + ". Incompatible or ambiguous matches:";
             		var messageNode = ListExtensions.CreateList(listHeader, failedMatchesList);
-                    State.Log.LogError(new LogEntry("Method resolution error", messageNode, Location));
+                    State.Log.LogError(new LogEntry("method resolution error", messageNode, Location));
             	}
             	else
             	{
                     var thisMethodCode = this.Method.GetCode().Trim();
-            		State.Log.LogError(new LogEntry("Method resolution error", "Method call '" + thisCode.ToString() + "' could not be resolved because '" + thisMethodCode.ToString() + "' was not recognized as function or type member. Expected signature compatible with " + expectedSignature.ToString() + ".", Location));
+            		State.Log.LogError(new LogEntry("method resolution error", "method call '" + thisCode.ToString() + "' could not be resolved because '" + thisMethodCode.ToString() + "' was not recognized as function or type member. Expected signature compatible with " + expectedSignature.ToString() + ".", Location));
             	}
             }
 

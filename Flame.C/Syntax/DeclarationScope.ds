@@ -103,7 +103,8 @@ namespace Flame.Syntax.C
             {
                 if (Declaration.IsDefinition)
                 {
-                    Unit.Assembly.Log.LogError(new LogEntry("Type redefinition",
+                    Unit.Assembly.Log.LogError(new LogEntry(
+                        "type redefinition",
                         CreateRedefinitionNode(Definition.LocalName,
                             Definition.DefinitionSyntax.GetSourceLocation(),
                             Declaration.DefinitionSyntax.GetSourceLocation())));

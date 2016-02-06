@@ -34,7 +34,7 @@ namespace Flame.Syntax.C
             }
             else
             {
-            	Log.LogError("Expected ++ or --, not " + Operator.TokenValue + ".");
+            	Log.LogError(new LogEntry("parser error", "expected ++ or --, not " + Operator.TokenValue + ".", Operator.Location));
             	val = null;
             }
             return Variable.CreateSetStatement(val);

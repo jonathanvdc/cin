@@ -86,7 +86,7 @@ namespace Flame.C.Parser
             }
             else
             {
-                Log.LogError(new LogEntry("Parser error", "Could not identify token '" + token.TokenValue + "' as valid expression syntax.", token.Location));
+                Log.LogError(new LogEntry("parser error", "could not identify token '" + token.TokenValue + "' as valid expression syntax.", token.Location));
                 return null;
             }
             return ParseIdentifierExpression(expr, Parser);
@@ -833,7 +833,7 @@ namespace Flame.C.Parser
             }
             else
             {
-                Log.LogError(new LogEntry("Parser error", "Token '" + Token.ToString() + "' was mistakenly identified as a value token or could not be parsed.", Token.Location));
+                Log.LogError(new LogEntry("parser error", "token '" + Token.ToString() + "' was mistakenly identified as a value token or could not be parsed.", Token.Location));
                 return null;
             }
         }
@@ -874,7 +874,7 @@ namespace Flame.C.Parser
                 }
                 else
                 {
-                    Log.LogError(new LogEntry("Parser error", "Token '" + Token.ToString() + "' was mistakenly identified as an expression prefix or could not be parsed.", Token.Location));
+                    Log.LogError(new LogEntry("parser error", "token '" + Token.ToString() + "' was mistakenly identified as an expression prefix or could not be parsed.", Token.Location));
                     return null;
                 }
             }

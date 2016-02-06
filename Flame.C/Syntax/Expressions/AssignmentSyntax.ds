@@ -68,7 +68,7 @@ namespace Flame.Syntax.C
         	{
         		if (Operator.Type != TokenType.Equals)
         		{
-        			State.Log.LogError(new LogEntry("Invalid assignment operator", "Operator '" + Operator.ToString() + "' is not supported as an assignment operator.", Operator.Location));
+        			State.Log.LogError(new LogEntry("invalid assignment operator", "operator '" + Operator.ToString() + "' is not supported as an assignment operator.", Operator.Location));
         		}
         		if (SourceVariable.Type.Is(TargetVariable.Type))
         		{
