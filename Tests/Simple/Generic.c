@@ -18,11 +18,13 @@ double SquareDouble(double Value)
     return Value * Value;
 }
 
+#define Sqr(x) _Generic(x, int: Square, \
+                           struct A: SquareA, \
+                           default: SquareDouble)(x)
+
 struct A Test(void)
 {
     struct A val;
     val.x = 5;
-    return _Generic(val, int: Square(val),
-                         struct A: SquareA(val),
-                         default: SquareDouble(val));
+    return Sqr(val);
 }
