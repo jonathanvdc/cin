@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -32,10 +32,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Flame, Version=0.0.65535.65535, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\libs\Flame.dll</HintPath>
-    </Reference>
     <Reference Include="Flame.Analysis">
       <HintPath>..\libs\Flame.Analysis.dll</HintPath>
     </Reference>
@@ -47,10 +43,6 @@
     </Reference>
     <Reference Include="Flame.CodeDescription">
       <HintPath>..\libs\Flame.CodeDescription.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.Compiler, Version=0.0.65535.65535, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\libs\Flame.Compiler.dll</HintPath>
     </Reference>
     <Reference Include="Flame.Cpp">
       <HintPath>..\libs\Flame.Cpp.dll</HintPath>
@@ -72,10 +64,6 @@
     </Reference>
     <Reference Include="Flame.RT">
       <HintPath>..\libs\Flame.RT.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.Syntax, Version=0.0.65535.65535, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\libs\Flame.Syntax.dll</HintPath>
     </Reference>
     <Reference Include="Flame.TextContract">
       <HintPath>..\libs\Flame.TextContract.dll</HintPath>
@@ -108,6 +96,18 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="Flame">
+      <HintPath>..\libs\Flame.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Compiler">
+      <HintPath>..\libs\Flame.Compiler.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Syntax">
+      <HintPath>..\libs\Flame.Syntax.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CFileHandler.cs" />
