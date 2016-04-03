@@ -26,7 +26,7 @@ namespace Flame.Syntax.C
         	}
         }
 
-        public static const void AppendCallSignature(CodeBuilder SignatureBuilder, IType[] argTypes, IConverter<IType, string> TypeNamer)
+        public static void AppendCallSignature(CodeBuilder SignatureBuilder, IType[] argTypes, IConverter<IType, string> TypeNamer)
         {
     	    SignatureBuilder.Append('(');
         	bool first = true;
@@ -43,7 +43,7 @@ namespace Flame.Syntax.C
         	SignatureBuilder.Append(')');
         }
 
-        public static const MarkupNode CreateSignatureDiff(IMethod Method, IType[] ArgumentTypes, IConverter<IType, string> TypeNamer)
+        public static MarkupNode CreateSignatureDiff(IMethod Method, IType[] ArgumentTypes, IConverter<IType, string> TypeNamer)
         {
             var nodes = new List<MarkupNode>();
             var retType = Method.ReturnType;
@@ -62,7 +62,7 @@ namespace Flame.Syntax.C
             return new MarkupNode("node", nodes);
         }
 
-        public static const CodeBuilder CreateExpectedSignatureDescription(CodeBuilder MethodCode, IType[] ArgumentTypes, IConverter<IType, string> TypeNamer)
+        public static CodeBuilder CreateExpectedSignatureDescription(CodeBuilder MethodCode, IType[] ArgumentTypes, IConverter<IType, string> TypeNamer)
         {
             CodeBuilder expectedSignature = new CodeBuilder();
         	expectedSignature.Append("'");
@@ -71,7 +71,7 @@ namespace Flame.Syntax.C
         	return expectedSignature;
         }
 
-        public const IExpression CreateExpression(ISyntaxState State)
+        public IExpression CreateExpression(ISyntaxState State)
         {
             var delegateExpr = Method.CreateVerifiedExpression(State);
 
@@ -111,12 +111,12 @@ namespace Flame.Syntax.C
             return new InvocationExpression(delegateExpr, argExprs);
         }
 
-        public override const string ToString()
+        public override string ToString()
         {
             return GetCode().ToString();
         }
 
-        public const CodeBuilder GetCode()
+        public CodeBuilder GetCode()
         {
             CodeBuilder sb = new CodeBuilder();
             sb.Append(Method.GetCode());
